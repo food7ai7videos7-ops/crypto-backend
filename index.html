@@ -8,120 +8,206 @@
     <style>
         body { background-color: #0b0e11; color: #eaecef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .glass-card { background: #181a20; border: 1px solid #2b313a; }
+        .modal-bg { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen pb-24">
 
-    <header class="flex justify-between items-center mb-5 px-4 pt-3 border-b border-gray-800">
+    <!-- Header -->
+    <header class="flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-[#181a20]">
         <div class="flex items-center space-x-2">
-            <span class="text-lg font-bold tracking-wider text-yellow-500">PRO EXCHANGER</span>
+            <span class="text-base font-extrabold tracking-wider text-yellow-500">PRO EXCHANGER</span>
         </div>
         <div class="flex items-center space-x-2">
-            <div id="modeToggleBtn" onclick="toggleTradingMode()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer">MODE: REAL</div>
-            <button onclick="openModal('depositModal')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-1 px-3 rounded-lg text-xs">Deposit</button>
-            <button onclick="openModal('withdrawModal')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded-lg text-xs">Withdraw</button>
+            <button onclick="openModal('depositModal')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-1.5 px-3 rounded-lg text-xs transition">Deposit</button>
+            <button onclick="openModal('withdrawModal')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition">Withdraw</button>
+            <button onclick="openModal('adminModal')" class="bg-gray-800 text-gray-400 hover:text-white px-2 py-1.5 rounded-lg text-xs">⚙️</button>
         </div>
     </header>
 
-    <div class="grid grid-cols-2 gap-3 mb-4 px-4">
+    <!-- Account Balances -->
+    <div class="grid grid-cols-2 gap-3 p-4">
         <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-xs text-gray-400">USDT BALANCE</p>
-            <p id="usdtBalance" class="text-lg font-bold text-yellow-400 mt-0.5">$0.00</p>
+            <p class="text-[11px] text-gray-400 tracking-wide">USDT BALANCE</p>
+            <p id="usdtBalance" class="text-xl font-bold text-yellow-400 mt-0.5">$0.00</p>
         </div>
         <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-xs text-gray-400">HOLDINGS</p>
-            <p id="coinHoldings" class="text-lg font-bold text-gray-100 mt-0.5">0.000000 BTC</p>
+            <p class="text-[11px] text-gray-400 tracking-wide">HOLDINGS</p>
+            <p id="coinHoldings" class="text-lg font-bold text-gray-100 mt-0.5">0.0000 BTC</p>
         </div>
         <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-xs text-gray-400">AVG ENTRY PRICE</p>
+            <p class="text-[11px] text-gray-400 tracking-wide">AVG ENTRY PRICE</p>
             <p id="avgEntry" class="text-base font-semibold text-gray-200 mt-0.5">$0.00</p>
         </div>
         <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-xs text-gray-400">LIVE PNL (OPEN)</p>
+            <p class="text-[11px] text-gray-400 tracking-wide">LIVE PNL</p>
             <p id="livePnl" class="text-base font-semibold text-green-400 mt-0.5">+$0.00 (0.00%)</p>
         </div>
     </div>
 
+    <!-- Live Market Ticker & Selector -->
     <div class="glass-card p-4 rounded-xl mx-4 mb-4">
-        <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between items-center mb-3">
             <div class="flex items-center space-x-2">
-                <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold p-1 rounded border border-gray-700">
-                    <option value="BTCUSDT">BTC / USDT</option>
+                <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold p-1.5 rounded-lg border border-gray-700 focus:outline-none">
+                    <option value="BTCUSDT" price="79700.50">BTC / USDT</option>
+                    <option value="ETHUSDT" price="3450.20">ETH / USDT</option>
+                    <option value="SOLUSDT" price="185.40">SOL / USDT</option>
+                    <option value="XRPUSDT" price="2.45">XRP / USDT</option>
                 </select>
-                <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">SPOT</span>
+                <span class="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-medium">SPOT</span>
             </div>
-            <div class="flex items-center space-x-1">
+            <div class="flex items-center space-x-1.5">
                 <span class="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 <span class="text-xs text-green-400 font-semibold">LIVE</span>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mb-1">LIVE TICKER PRICE</p>
-        <h2 id="activeCoinPrice" class="text-3xl font-extrabold text-green-400 tracking-tight">$0.00</h2>
+        <p class="text-[11px] text-gray-400 mb-0.5">MARKET PRICE</p>
+        <h2 id="activeCoinPrice" class="text-3xl font-extrabold text-green-400 tracking-tight">$79,700.50</h2>
     </div>
 
+    <!-- Order Panel -->
     <div class="glass-card p-4 rounded-xl mx-4 mb-4">
-        <h3 id="orderPanelTitle" class="text-base font-bold text-sm mb-1">SPOT MARKET ORDER</h3>
-        <p id="feeDisplay" class="text-xs text-yellow-500 mb-3">Platform Trading Fee: 5% (Buy & Sell)</p>
-        
         <div class="flex bg-[#0b0e11] p-1 rounded-lg border border-gray-800 mb-3">
-            <button id="buyTabBtn" onclick="setOrderType('BUY')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white">BUY</button>
-            <button id="sellTabBtn" onclick="setOrderType('SELL')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400">SELL</button>
+            <button id="buyTabBtn" onclick="setOrderType('BUY')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white transition">BUY</button>
+            <button id="sellTabBtn" onclick="setOrderType('SELL')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400 transition">SELL</button>
         </div>
 
         <div class="mb-3">
-            <label id="orderInputLabel" class="block text-xs text-gray-400 mb-1">Amount (USDT)</label>
-            <input type="number" id="orderAmount" placeholder="Enter USDT Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-green-500">
+            <label class="block text-xs text-gray-400 mb-1">Order Amount (USDT)</label>
+            <input type="number" id="orderAmount" placeholder="Enter amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-green-500">
         </div>
 
-        <button id="executeOrderBtn" onclick="executeSpotTrade()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition">BUY BTC</button>
+        <button id="executeOrderBtn" onclick="executeSpotTrade()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-lg">BUY ASSET</button>
+    </div>
+
+    <!-- Trade History Section -->
+    <div class="glass-card p-4 rounded-xl mx-4 mb-6">
+        <h3 class="text-sm font-bold text-gray-300 mb-3">Recent Activity History</h3>
+        <div id="historyContainer" class="space-y-2 max-h-40 overflow-y-auto text-xs text-gray-400">
+            <p>No recent trades or transactions found.</p>
+        </div>
     </div>
 
     <!-- Deposit Modal -->
-    <div id="depositModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+    <div id="depositModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-3 text-yellow-400">Deposit USDT</h3>
-            <p class="text-xs text-gray-400 mb-3">Enter the amount you want to deposit into your trading account.</p>
-            <input type="number" id="depositAmount" placeholder="Enter amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4">
+            <h3 class="text-lg font-bold mb-2 text-yellow-400">Deposit USDT</h3>
+            <p class="text-xs text-gray-400 mb-3">Send USDT to the official deposit address below:</p>
+            <div class="bg-[#0b0e11] p-2.5 rounded-lg border border-gray-700 text-xs text-yellow-300 break-all mb-3 font-mono" id="displayDepositAddress">Loading address...</div>
+            <input type="number" id="depositAmount" placeholder="Enter deposited amount ($)..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
             <div class="flex space-x-2">
-                <button onclick="executeDeposit()" class="w-full bg-yellow-500 text-black font-bold py-2.5 rounded-lg text-sm">Confirm Deposit</button>
+                <button onclick="executeDeposit()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 rounded-lg text-sm transition">Confirm Deposit</button>
                 <button onclick="closeModal('depositModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
             </div>
         </div>
     </div>
 
     <!-- Withdraw Modal -->
-    <div id="withdrawModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+    <div id="withdrawModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-3 text-red-400">Withdraw USDT</h3>
-            <input type="number" id="withdrawAmount" placeholder="Amount (USDT)..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-3">
-            <input type="text" id="withdrawAddress" placeholder="Wallet Address..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4">
+            <input type="number" id="withdrawAmount" placeholder="Amount (USDT)..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-3 focus:outline-none">
+            <input type="text" id="withdrawAddress" placeholder="Destination Wallet Address..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
             <div class="flex space-x-2">
-                <button onclick="executeWithdraw()" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-lg text-sm">Confirm Withdraw</button>
+                <button onclick="executeWithdraw()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Confirm Withdraw</button>
                 <button onclick="closeModal('withdrawModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
             </div>
         </div>
     </div>
 
+    <!-- Admin Settings Modal -->
+    <div id="adminModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-3 text-blue-400">Admin Panel</h3>
+            <label class="block text-xs text-gray-400 mb-1">Set Official Deposit Address:</label>
+            <input type="text" id="adminAddressInput" placeholder="Enter new address..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
+            <div class="flex space-x-2">
+                <button onclick="updateAdminAddress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Save Address</button>
+                <button onclick="closeModal('adminModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Pro Popup Modal -->
+    <div id="customPopup" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-6 rounded-2xl w-full max-w-xs text-center border border-gray-700 shadow-2xl">
+            <div id="popupIcon" class="text-3xl mb-2">✅</div>
+            <h3 id="popupTitle" class="text-base font-bold text-white mb-1">Notification</h3>
+            <p id="popupMessage" class="text-xs text-gray-300 mb-4 leading-relaxed">Action processed successfully.</p>
+            <button onclick="closeModal('customPopup')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition">OK</button>
+        </div>
+    </div>
+
     <script>
         let state = {
-            mode: 'REAL',
-            usdtBalance: 0.00,
-            coinHoldings: 0.000000,
-            avgEntry: 0.00,
+            orderType: 'BUY',
             activeCoin: 'BTCUSDT',
-            activePrice: 79700.31,
-            orderType: 'BUY'
+            activePrice: 79700.50
         };
 
-        function toggleTradingMode() {
-            state.mode = state.mode === 'REAL' ? 'DEMO' : 'REAL';
-            const btn = document.getElementById('modeToggleBtn');
-            btn.innerText = `MODE: ${state.mode}`;
-            btn.className = state.mode === 'REAL' ? 'bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer' : 'bg-orange-600 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer';
+        // Fetch user data and admin config on load
+        window.onload = async function() {
+            await fetchUserData();
+            await fetchAdminConfig();
+        };
+
+        async function fetchUserData() {
+            try {
+                const res = await fetch('/api/user/account');
+                const data = await res.json();
+                if(data.success) {
+                    updateUI(data.account);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchAdminConfig() {
+            try {
+                const res = await fetch('/api/admin/config');
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('displayDepositAddress').innerText = data.depositAddress;
+                    document.getElementById('adminAddressInput').value = data.depositAddress;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateUI(account) {
+            document.getElementById('usdtBalance').innerText = `$${account.balance.toFixed(2)}`;
+            document.getElementById('coinHoldings').innerText = `${account.holdings.toFixed(4)} BTC`;
+            document.getElementById('avgEntry').innerText = `$${account.avgEntry.toFixed(2)}`;
+            
+            const historyContainer = document.getElementById('historyContainer');
+            if(account.tradeHistory.length === 0) {
+                historyContainer.innerHTML = `<p class="text-gray-500">No recent trades or transactions found.</p>`;
+            } else {
+                historyContainer.innerHTML = account.tradeHistory.map(item => `
+                    <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded border border-gray-800">
+                        <span class="font-medium text-gray-200">${item.details}</span>
+                        <span class="text-[10px] text-gray-500">${item.time}</span>
+                    </div>
+                `).join('');
+            }
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.remove('flex'); document.getElementById(id).classList.add('hidden'); }
+
+        function showPopup(title, message, isSuccess = true) {
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupMessage').innerText = message;
+            document.getElementById('popupIcon').innerText = isSuccess ? '✅' : '❌';
+            openModal('customPopup');
+        }
+
+        function changeActiveCoin() {
+            const select = document.getElementById('coinSelector');
+            const selectedOption = select.options[select.selectedIndex];
+            state.activeCoin = select.value;
+            state.activePrice = parseFloat(selectedOption.getAttribute('price'));
+            document.getElementById('activeCoinPrice').innerText = `$${state.activePrice.toLocaleString()}`;
+        }
 
         function setOrderType(type) {
             state.orderType = type;
@@ -130,58 +216,67 @@
             const execBtn = document.getElementById('executeOrderBtn');
 
             if (type === 'BUY') {
-                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white";
-                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
-                execBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition";
-                execBtn.innerText = "BUY BTC";
+                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white transition";
+                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400 transition";
+                execBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-lg";
+                execBtn.innerText = "BUY ASSET";
             } else {
-                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-red-600 text-white";
-                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
-                execBtn.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg text-sm transition";
-                execBtn.innerText = "SELL BTC";
+                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-red-600 text-white transition";
+                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400 transition";
+                execBtn.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-lg";
+                execBtn.innerText = "SELL ASSET";
             }
         }
 
         async function executeDeposit() {
             const amount = parseFloat(document.getElementById('depositAmount').value);
-            if (!amount || amount <= 0) { alert('Enter valid amount'); return; }
+            if (!amount || amount <= 0) { showPopup('Error', 'Please enter a valid deposit amount.', false); return; }
 
-            try {
-                const res = await fetch('/api/deposit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount })
-                });
-                const data = await res.json();
-                if(data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
-                }
-            } catch (e) { alert('Deposit request failed.'); }
+            const res = await fetch('/api/deposit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            });
+            const data = await res.json();
+            closeModal('depositModal');
+            showPopup(data.success ? 'Success' : 'Error', data.message, data.success);
+            if(data.success) fetchUserData();
         }
 
         async function executeWithdraw() {
             const amount = parseFloat(document.getElementById('withdrawAmount').value);
             const address = document.getElementById('withdrawAddress').value;
-            if (!amount || !address) { alert('Fill all fields'); return; }
+            if (!amount || !address) { showPopup('Error', 'Please fill in all withdrawal fields.', false); return; }
 
-            try {
-                const res = await fetch('/api/withdraw', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount, address })
-                });
-                const data = await res.json();
-                alert(data.message);
-                if(data.success) location.reload();
-            } catch (e) { alert('Withdraw request failed.'); }
+            const res = await fetch('/api/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, address })
+            });
+            const data = await res.json();
+            closeModal('withdrawModal');
+            showPopup(data.success ? 'Success' : 'Error', data.message, data.success);
+            if(data.success) fetchUserData();
+        }
+
+        async function updateAdminAddress() {
+            const address = document.getElementById('adminAddressInput').value;
+            if (!address) { showPopup('Error', 'Address cannot be empty.', false); return; }
+
+            const res = await fetch('/api/admin/update-address', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+            });
+            const data = await res.json();
+            closeModal('adminModal');
+            showPopup('Admin Update', data.message, data.success);
+            fetchAdminConfig();
         }
 
         async function executeSpotTrade() {
             const amount = parseFloat(document.getElementById('orderAmount').value);
-            if (!amount || amount <= 0) { alert('Enter valid trade amount'); return; }
+            if (!amount || amount <= 0) { showPopup('Error', 'Please enter a valid amount to trade.', false); return; }
 
             try {
                 const res = await fetch('/api/trade', {
@@ -195,8 +290,12 @@
                     })
                 });
                 const data = await res.json();
-                alert(data.message);
-            } catch (e) { alert('Trade execution failed.'); }
+                showPopup(data.success ? 'Trade Executed' : 'Margin Error', data.message, data.success);
+                if(data.success) {
+                    updateUI(data.account);
+                    document.getElementById('orderAmount').value = '';
+                }
+            } catch (e) { showPopup('Error', 'Network error while executing trade.', false); }
         }
     </script>
 </body>
