@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const app = express();
 
 app.use(express.json());
@@ -37,6 +38,15 @@ let customCoins = [
     { symbol: 'XRPUSDT', price: 2.45 }
 ];
 
+// Helper function to sign Bitget API requests securely
+function signBitget(method, requestPath, body, secretKey) {
+    const timestamp = Date.now().toString();
+    const bodyString = body ? JSON.stringify(body) : '';
+    const message = timestamp + method.toUpperCase() + requestPath + bodyString;
+    const signature = crypto.createHmac('sha256', secretKey).update(message).digest('base64');
+    return { timestamp, signature };
+}
+
 app.get('/api/admin/config', (req, res) => {
     res.json({ 
         success: true, 
@@ -69,7 +79,7 @@ app.post('/api/admin/update-settings', (req, res) => {
     if (bitgetSecret) adminConfig.bitgetSecret = bitgetSecret;
     if (bitgetPassphrase) adminConfig.bitgetPassphrase = bitgetPassphrase;
     
-    res.json({ success: true, message: 'Settings aur API keys successfully update ho gayi!' });
+    res.json({ success: true, message: 'Settings aur Bitget API keys successfully update ho gayi!' });
 });
 
 app.post('/api/admin/add-coin', (req, res) => {
@@ -156,6 +166,7 @@ app.post('/api/withdraw', (req, res) => {
     res.json({ success: true, message: 'Withdrawal request admin approval ke liye bhej di gayi hai.' });
 });
 
+// REAL BITGET EXCHANGE AUTOMATED TRADE ROUTE
 app.post('/api/trade', async (req, res) => {
     const { symbol, side, amount, price } = req.body;
     
@@ -168,30 +179,70 @@ app.post('/api/trade', async (req, res) => {
 
     const fee = (amount * adminConfig.tradingFeePercent) / 100;
     const netInvestment = amount - fee;
+    const coinSize = (netInvestment / price).toFixed(4);
 
     try {
-        // Vercel friendly execution simulation / ready for direct fetch api
+        // Agar Admin ne API Keys save ki hain, toh real Bitget exchange par order fire hoga
+        if (adminConfig.bitgetApiKey && adminConfig.bitgetSecret && adminConfig.bitgetPassphrase) {
+            const method = 'POST';
+            const requestPath = '/api/v2/spot/trade/place-order'; // Bitget Spot V2 API
+            
+            const orderBody = {
+                symbol: symbol.toUpperCase(),
+                productType: 'spot',
+                marginMode: 'crossed',
+                side: side.toLowerCase(), // 'buy' or 'sell'
+                orderType: 'market',
+                size: coinSize
+            };
+
+            const { timestamp, signature } = signBitget(method, requestPath, orderBody, adminConfig.bitgetSecret);
+
+            const bitgetRes = await fetch('https://api.bitget.com' + requestPath, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ACCESS-KEY': adminConfig.bitgetApiKey,
+                    'ACCESS-SIGN': signature,
+                    'ACCESS-TIMESTAMP': timestamp,
+                    'ACCESS-PASSPHRASE': adminConfig.bitgetPassphrase,
+                    'Locale': 'en_US'
+                },
+                body: JSON.stringify(orderBody)
+            });
+
+            const bitgetData = await bitgetRes.json();
+            if (bitgetData.code && bitgetData.code !== '00000') {
+                throw new Error(bitgetData.msg || 'Bitget order execution rejected');
+            }
+        }
+
+        // Local website account update & profit pool collection
         userAccount.balance -= amount;
         userAccount.accumulatedFee += fee;
-        userAccount.holdings += (netInvestment / price);
+        userAccount.holdings += parseFloat(coinSize);
         userAccount.avgEntry = price;
 
         userAccount.tradeHistory.unshift({
-            details: `${side} ${symbol} worth $${netInvestment.toFixed(2)} (Fee: $${fee.toFixed(2)})`,
+            details: `Bitget Live: ${side} ${symbol} worth $${netInvestment.toFixed(2)} (Fee: $${fee.toFixed(2)})`,
             time: new Date().toLocaleTimeString()
         });
 
         res.json({ 
             success: true, 
-            message: `Order successfully executed! Fee collected: $${fee.toFixed(2)}`, 
+            message: `Order successfully executed on Bitget! Fee collected: $${fee.toFixed(2)}`, 
             account: userAccount 
         });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Bitget Execution Error:", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: `Bitget Error: ${error.message}` 
+        });
     }
 });
 
-// Local test ke liye, Vercel ke liye serverless export zaroori hai
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
