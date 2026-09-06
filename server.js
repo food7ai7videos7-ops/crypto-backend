@@ -179,22 +179,20 @@ app.post('/api/trade', async (req, res) => {
 
     const fee = (amount * adminConfig.tradingFeePercent) / 100;
     const netInvestment = amount - fee;
-    // Calculate coin quantity based on market price
     const coinSize = (netInvestment / price).toFixed(4);
 
     try {
-        // Agar Admin ne API Keys save ki hain, toh real Bitget Spot exchange par order fire hoga
         if (adminConfig.bitgetApiKey && adminConfig.bitgetSecret && adminConfig.bitgetPassphrase) {
             const method = 'POST';
-            const requestPath = '/api/v2/spot/trade/place-order'; // Bitget Spot V2 Endpoint
+            const requestPath = '/api/v2/spot/trade/place-order';
             
-            // Correct Bitget Spot payload structure
             const orderBody = {
-                symbol: symbol.toUpperCase(), // e.g. XRPUSDT
-                side: side.toLowerCase(),     // 'buy' or 'sell'
-                orderType: 'market',          // Market order
+                symbol: symbol.toUpperCase(),
+                side: side.toLowerCase(),
+                orderType: 'market',
                 force: 'normal',
-                size: coinSize                // Quantity of coin
+                size: coinSize,
+                delegateAmount: coinSize
             };
 
             const { timestamp, signature } = signBitget(method, requestPath, orderBody, adminConfig.bitgetSecret);
@@ -214,13 +212,11 @@ app.post('/api/trade', async (req, res) => {
 
             const bitgetData = await bitgetRes.json();
             
-            // Strict check: Agar Bitget error dega to yahin execution ruk jayegi aur error show hoga
             if (!bitgetData.code || bitgetData.code !== '00000') {
                 throw new Error(bitgetData.msg || 'Bitget API rejected the order');
             }
         }
 
-        // Local website account update & profit collection only if Bitget succeeds
         userAccount.balance -= amount;
         userAccount.accumulatedFee += fee;
         userAccount.holdings += parseFloat(coinSize);
@@ -237,7 +233,7 @@ app.post('/api/trade', async (req, res) => {
             account: userAccount 
         });
 
-    } catch (error) {
+    } code (error) { // Catch block
         console.error("Bitget Execution Error:", error.message);
         res.status(500).json({ 
             success: false, 
