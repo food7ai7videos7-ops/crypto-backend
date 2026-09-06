@@ -233,7 +233,7 @@ app.post('/api/trade', async (req, res) => {
             account: userAccount 
         });
 
-    } code (error) { // Catch block
+    } catch (error) {
         console.error("Bitget Execution Error:", error.message);
         res.status(500).json({ 
             success: false, 
