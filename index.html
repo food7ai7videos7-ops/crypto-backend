@@ -6,32 +6,31 @@
     <title>Pro Spot Crypto Exchanger</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b0e11; color: #eaeaec; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #0b0e11; color: #eaecef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .glass-card { background: #181a20; border: 1px solid #2b313a; }
     </style>
 </head>
-<body class="min-h-screen p-4 pb-20">
+<body class="min-h-screen pb-20">
 
-    <header class="flex justify-between items-center mb-5 pb-3 border-b border-gray-800">
+    <header class="flex justify-between items-center mb-5 px-4 pt-3 border-b border-gray-800">
         <div class="flex items-center space-x-2">
             <span class="text-lg font-bold tracking-wider text-yellow-500">PRO EXCHANGER</span>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="modeToggleBtn" onclick="toggleTradingMode()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs">MODE: DEMO</button>
-            <button onclick="openAdminPanel()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300 border border-gray-700">⚙️</button>
-            <button onclick="openModal('depositModal')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1.5 rounded-lg text-xs">Deposit</button>
-            <button onclick="openModal('withdrawModal')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg text-xs border border-gray-700">Withdraw</button>
+            <div id="modeToggleBtn" onclick="toggleTradingMode()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer">MODE: REAL</div>
+            <button onclick="openModal('depositModal')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-1 px-3 rounded-lg text-xs">Deposit</button>
+            <button onclick="openModal('withdrawModal')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded-lg text-xs">Withdraw</button>
         </div>
     </header>
 
-    <div class="grid grid-cols-2 gap-3 mb-4">
+    <div class="grid grid-cols-2 gap-3 mb-4 px-4">
         <div class="glass-card p-3.5 rounded-xl">
             <p class="text-xs text-gray-400">USDT BALANCE</p>
-            <p id="usdtBalance" class="text-lg font-bold text-yellow-400 mt-0.5">$1,000.00</p>
+            <p id="usdtBalance" class="text-lg font-bold text-yellow-400 mt-0.5">$0.00</p>
         </div>
         <div class="glass-card p-3.5 rounded-xl">
             <p class="text-xs text-gray-400">HOLDINGS</p>
-            <p id="coinHoldings" class="text-lg font-bold text-gray-100 mt-0.5">0.000000</p>
+            <p id="coinHoldings" class="text-lg font-bold text-gray-100 mt-0.5">0.000000 BTC</p>
         </div>
         <div class="glass-card p-3.5 rounded-xl">
             <p class="text-xs text-gray-400">AVG ENTRY PRICE</p>
@@ -43,478 +42,162 @@
         </div>
     </div>
 
-    <div class="glass-card p-4 rounded-xl mb-4">
+    <div class="glass-card p-4 rounded-xl mx-4 mb-4">
         <div class="flex justify-between items-center mb-2">
             <div class="flex items-center space-x-2">
-                <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold border border-gray-700 rounded px-2 py-1 focus:outline-none focus:border-yellow-500"></select>
+                <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold p-1 rounded border border-gray-700">
+                    <option value="BTCUSDT">BTC / USDT</option>
+                </select>
                 <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">SPOT</span>
             </div>
-            <span class="text-xs text-green-400 flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full inline-block mr-1.5 animate-pulse"></span>LIVE</span>
+            <div class="flex items-center space-x-1">
+                <span class="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span class="text-xs text-green-400 font-semibold">LIVE</span>
+            </div>
         </div>
         <p class="text-xs text-gray-400 mb-1">LIVE TICKER PRICE</p>
         <h2 id="activeCoinPrice" class="text-3xl font-extrabold text-green-400 tracking-tight">$0.00</h2>
     </div>
 
-    <div class="glass-card p-4 rounded-xl mb-4">
-        <h3 id="orderPanelTitle" class="font-bold text-sm mb-1">SPOT MARKET ORDER</h3>
-        <p class="text-[11px] text-yellow-500 mb-3" id="feeDisplayText">ℹ️ Platform Trading Fee: 5% (Buy & Sell)</p>
+    <div class="glass-card p-4 rounded-xl mx-4 mb-4">
+        <h3 id="orderPanelTitle" class="text-base font-bold text-sm mb-1">SPOT MARKET ORDER</h3>
+        <p id="feeDisplay" class="text-xs text-yellow-500 mb-3">Platform Trading Fee: 5% (Buy & Sell)</p>
         
         <div class="flex bg-[#0b0e11] p-1 rounded-lg border border-gray-800 mb-3">
             <button id="buyTabBtn" onclick="setOrderType('BUY')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white">BUY</button>
-            <button id="sellTabBtn" onclick="setOrderType('SELL')" class="w-1/2 py-2 text-xs font-bold rounded-md text-gray-400">SELL</button>
+            <button id="sellTabBtn" onclick="setOrderType('SELL')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400">SELL</button>
         </div>
 
         <div class="mb-3">
             <label id="orderInputLabel" class="block text-xs text-gray-400 mb-1">Amount (USDT)</label>
-            <input type="number" id="orderAmount" placeholder="Enter USDT Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-yellow-500">
+            <input type="number" id="orderAmount" placeholder="Enter USDT Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-green-500">
         </div>
-        
-        <button id="executeOrderBtn" onclick="executeSpotTrade()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-sm">BUY COIN</button>
+
+        <button id="executeOrderBtn" onclick="executeSpotTrade()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition">BUY BTC</button>
     </div>
 
-    <div class="glass-card p-4 rounded-xl mb-4">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="font-bold text-sm">TRADING HISTORY</h3>
-            <span id="tradeCount" class="text-xs bg-gray-800 px-2 py-0.5 rounded text-gray-400">0 Trades</span>
-        </div>
-        <div id="tradesList" class="space-y-2">
-            <p class="text-xs text-gray-500 text-center py-4">No trade history found.</p>
-        </div>
-    </div>
-
-    <div class="glass-card p-4 rounded-xl mb-6">
-        <h3 class="font-bold text-sm mb-3">MARKET WATCHLIST</h3>
-        <div id="watchlistContainer" class="space-y-3"></div>
-    </div>
-
-    <!-- Modals -->
-    <div id="adminPasswordModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="glass-card w-full max-w-xs rounded-2xl p-5 border border-gray-700 text-center">
-            <h3 class="text-sm font-bold mb-1 text-yellow-500">Admin Authentication</h3>
-            <p class="text-xs text-gray-400 mb-3">Enter admin password.</p>
-            <input type="password" id="adminPasswordInput" placeholder="Password..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-sm text-white mb-3 text-center">
+    <!-- Deposit Modal -->
+    <div id="depositModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-3 text-yellow-400">Deposit USDT</h3>
+            <p class="text-xs text-gray-400 mb-3">Enter the amount you want to deposit into your trading account.</p>
+            <input type="number" id="depositAmount" placeholder="Enter amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4">
             <div class="flex space-x-2">
-                <button onclick="closeModal('adminPasswordModal')" class="w-1/2 bg-gray-800 py-2 rounded-lg text-xs text-gray-300">Cancel</button>
-                <button onclick="verifyAdminPassword()" class="w-1/2 bg-yellow-500 font-bold text-black py-2 rounded-lg text-xs">Verify</button>
+                <button onclick="executeDeposit()" class="w-full bg-yellow-500 text-black font-bold py-2.5 rounded-lg text-sm">Confirm Deposit</button>
+                <button onclick="closeModal('depositModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="adminModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-gray-700 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-sm font-bold text-yellow-500">ADMIN SETTINGS & PROFIT</h3>
-                <button onclick="closeModal('adminModal')" class="text-gray-400">✕</button>
-            </div>
-            
-            <div class="bg-[#0b0e11] p-3 rounded-lg border border-gray-800 mb-3 space-y-2">
-                <label class="block text-[11px] text-gray-400">Your Personal Deposit Wallet Address</label>
-                <input type="text" id="adminWalletInput" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white">
-                <label class="block text-[11px] text-gray-400">Min Deposit</label>
-                <input type="number" id="adminMinDepositInput" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white">
-                <label class="block text-[11px] text-gray-400">Trading Fee (%) [Buy & Sell]</label>
-                <input type="number" id="adminFeeInput" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white">
-                
-                <div class="bg-gray-900 p-2.5 rounded border border-gray-800 mt-2">
-                    <p class="text-[11px] text-green-400 font-bold">Accumulated Admin Fee / Profit:</p>
-                    <p id="adminRevenueDisplay" class="text-base font-extrabold text-yellow-400">$0.00 USDT</p>
-                    <button onclick="withdrawAdminRevenue()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 rounded mt-2 text-xs">Withdraw Admin Fees to Wallet</button>
-                </div>
-
-                <button onclick="saveAdminSettings()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded text-xs mt-2">SAVE SETTINGS</button>
-            </div>
-
-            <div class="bg-[#0b0e11] p-3 rounded-lg border border-gray-800 mb-3">
-                <p class="text-xs text-yellow-500 font-bold mb-2">Pending Withdrawal Requests</p>
-                <div id="adminWithdrawalsList" class="space-y-2 max-h-36 overflow-y-auto">
-                    <p class="text-[11px] text-gray-500">No pending requests.</p>
-                </div>
-            </div>
-            
-            <div class="bg-[#0b0e11] p-3 rounded-lg border border-gray-800 mb-3 space-y-2">
-                <p class="text-xs text-yellow-500 font-bold">Add New Crypto Coin</p>
-                <input type="text" id="newCoinSymbol" placeholder="Symbol (e.g. SOL)" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white">
-                <input type="text" id="newCoinPair" placeholder="Binance Pair (e.g. SOLUSDT)" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white">
-                <button onclick="addNewCoin()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded text-xs">Add Coin</button>
-            </div>
-
-            <button onclick="resetData()" class="w-full bg-red-600/20 text-red-400 py-2 rounded-lg text-xs mb-2">Reset All Data</button>
-            <button onclick="addBonus()" class="w-full bg-green-600/20 text-green-400 py-2 rounded-lg text-xs mb-2">+ $500 Demo Bonus</button>
-            <button onclick="closeModal('adminModal')" class="w-full bg-gray-800 text-gray-300 py-2 rounded-lg text-xs">Close</button>
-        </div>
-    </div>
-
-    <div id="depositModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="glass-card w-full max-w-xs rounded-2xl p-5 border border-gray-700">
-            <h3 class="text-sm font-bold mb-2 text-yellow-400">Deposit USDT</h3>
-            <p class="text-[10px] text-gray-400 mb-1">Send payment to this address:</p>
-            <p id="displayDepositAddress" class="text-[10px] bg-gray-900 p-2 rounded text-yellow-200 break-all mb-3"></p>
-            <input type="number" id="depositInput" placeholder="Enter amount sent..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-sm text-white mb-3">
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-3 text-red-400">Withdraw USDT</h3>
+            <input type="number" id="withdrawAmount" placeholder="Amount (USDT)..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-3">
+            <input type="text" id="withdrawAddress" placeholder="Wallet Address..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4">
             <div class="flex space-x-2">
-                <button onclick="closeModal('depositModal')" class="w-1/2 bg-gray-800 py-2 rounded-lg text-xs text-gray-300">Cancel</button>
-                <button onclick="confirmDeposit()" class="w-1/2 bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs">Confirm Deposit</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="withdrawModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="glass-card w-full max-w-xs rounded-2xl p-5 border border-gray-700">
-            <h3 class="text-sm font-bold mb-3 text-yellow-400">Request Withdrawal</h3>
-            <input type="text" id="witAddress" placeholder="Your Wallet Address" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-sm text-white mb-3">
-            <input type="number" id="witAmountUsdt" placeholder="Amount" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-sm text-white mb-3">
-            <div class="flex space-x-2">
-                <button onclick="closeModal('withdrawModal')" class="w-1/2 bg-gray-800 py-2 rounded-lg text-xs text-gray-300">Cancel</button>
-                <button onclick="confirmWithdraw()" class="w-1/2 bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs">Request</button>
+                <button onclick="executeWithdraw()" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-lg text-sm">Confirm Withdraw</button>
+                <button onclick="closeModal('withdrawModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        let state = JSON.parse(localStorage.getItem('cryptoStateV9')) || {
-            tradingMode: 'DEMO',
-            demoUsdtBalance: 1000.00,
-            realUsdtBalance: 0.00,
-            adminWallet: '0x71C7656EC7ab88b098defB751B7401B5f6d89B5F',
-            minDeposit: 0.01,
-            tradingFeePercent: 5,
-            adminRevenue: 0.00,
-            withdrawRequests: [],
-            coins: [
-                { 
-                    symbol: 'BTC', pair: 'BTCUSDT', price: 90000.00, 
-                    demoHoldings: 0, demoInvested: 0, demoAvgEntry: 0,
-                    realHoldings: 0, realInvested: 0, realAvgEntry: 0 
-                },
-                { 
-                    symbol: 'ETH', pair: 'ETHUSDT', price: 3400.00, 
-                    demoHoldings: 0, demoInvested: 0, demoAvgEntry: 0,
-                    realHoldings: 0, realInvested: 0, realAvgEntry: 0 
-                },
-                { 
-                    symbol: 'SOL', pair: 'SOLUSDT', price: 180.00, 
-                    demoHoldings: 0, demoInvested: 0, demoAvgEntry: 0,
-                    realHoldings: 0, realInvested: 0, realAvgEntry: 0 
-                },
-                { 
-                    symbol: 'XRP', pair: 'XRPUSDT', price: 0.60, 
-                    demoHoldings: 0, demoInvested: 0, demoAvgEntry: 0,
-                    realHoldings: 0, realInvested: 0, realAvgEntry: 0 
-                }
-            ],
-            trades: []
+        let state = {
+            mode: 'REAL',
+            usdtBalance: 0.00,
+            coinHoldings: 0.000000,
+            avgEntry: 0.00,
+            activeCoin: 'BTCUSDT',
+            activePrice: 79700.31,
+            orderType: 'BUY'
         };
-        let currentOrderMode = 'BUY';
-
-        function saveState() { localStorage.setItem('cryptoStateV9', JSON.stringify(state)); updateUI(); }
 
         function toggleTradingMode() {
-            state.tradingMode = state.tradingMode === 'DEMO' ? 'REAL' : 'DEMO';
-            alert(`Switched to ${state.tradingMode} Mode.`);
-            updateUI();
-            saveState();
+            state.mode = state.mode === 'REAL' ? 'DEMO' : 'REAL';
+            const btn = document.getElementById('modeToggleBtn');
+            btn.innerText = `MODE: ${state.mode}`;
+            btn.className = state.mode === 'REAL' ? 'bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer' : 'bg-orange-600 text-white font-bold py-1 px-3 rounded-lg text-xs cursor-pointer';
         }
 
-        function getActiveBalance() {
-            return state.tradingMode === 'DEMO' ? state.demoUsdtBalance : state.realUsdtBalance;
-        }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('flex'); document.getElementById(id).classList.add('hidden'); }
 
-        function setActiveBalance(val) {
-            if (state.tradingMode === 'DEMO') state.demoUsdtBalance = val;
-            else state.realUsdtBalance = val;
-        }
-
-        function getActiveCoinProps(active) {
-            if (state.tradingMode === 'DEMO') {
-                return {
-                    holdings: active.demoHoldings,
-                    invested: active.demoInvested,
-                    avgEntry: active.demoAvgEntry,
-                    setHoldings: (v) => active.demoHoldings = v,
-                    setInvested: (v) => active.demoInvested = v,
-                    setAvgEntry: (v) => active.demoAvgEntry = v
-                };
-            } else {
-                return {
-                    holdings: active.realHoldings,
-                    invested: active.realInvested,
-                    avgEntry: active.realAvgEntry,
-                    setHoldings: (v) => active.realHoldings = v,
-                    setInvested: (v) => active.realInvested = v,
-                    setAvgEntry: (v) => active.realAvgEntry = v
-                };
-            }
-        }
-        
         function setOrderType(type) {
-            currentOrderMode = type;
-            let buyBtn = document.getElementById('buyTabBtn');
-            let sellBtn = document.getElementById('sellTabBtn');
-            let execBtn = document.getElementById('executeOrderBtn');
-            let label = document.getElementById('orderInputLabel');
-            let active = state.coins.find(c => c.pair === state.activeCoin) || state.coins[0];
+            state.orderType = type;
+            const buyBtn = document.getElementById('buyTabBtn');
+            const sellBtn = document.getElementById('sellTabBtn');
+            const execBtn = document.getElementById('executeOrderBtn');
 
             if (type === 'BUY') {
                 buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white";
-                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md text-gray-400";
-                execBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-sm";
-                execBtn.innerText = `BUY ${active.symbol}`;
-                label.innerText = "Amount (USDT)";
+                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
+                execBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition";
+                execBtn.innerText = "BUY BTC";
             } else {
-                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md text-gray-400";
                 sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-red-600 text-white";
-                execBtn.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm";
-                execBtn.innerText = `SELL ${active.symbol}`;
-                label.innerText = `Amount (${active.symbol})`;
+                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
+                execBtn.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg text-sm transition";
+                execBtn.innerText = "SELL BTC";
             }
         }
 
-        function updateUI() {
-            let balance = getActiveBalance();
-            document.getElementById('usdtBalance').innerText = `$${balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('feeDisplayText').innerText = `ℹ️ Platform Trading Fee: ${state.tradingFeePercent}% (Applied on Buy & Sell)`;
-            document.getElementById('displayDepositAddress').innerText = state.adminWallet;
-            
-            let btn = document.getElementById('modeToggleBtn');
-            btn.innerText = `MODE: ${state.tradingMode}`;
-            btn.className = state.tradingMode === 'REAL' ? "bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs" : "bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs";
+        async function executeDeposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            if (!amount || amount <= 0) { alert('Enter valid amount'); return; }
 
-            let selector = document.getElementById('coinSelector');
-            selector.innerHTML = state.coins.map(c => `<option value="${c.pair}" ${state.activeCoin === c.pair ? 'selected' : ''}>${c.symbol} / USDT</option>`).join('');
-            
-            let active = state.coins.find(c => c.pair === state.activeCoin) || state.coins[0];
-            let props = getActiveCoinProps(active);
-
-            document.getElementById('activeCoinPrice').innerText = `$${active.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})}`;
-            document.getElementById('coinHoldings').innerText = `${props.holdings.toFixed(6)} ${active.symbol}`;
-            document.getElementById('orderPanelTitle').innerText = `SPOT MARKET - ${active.symbol}/USDT`;
-
-            setOrderType(currentOrderMode);
-
-            document.getElementById('avgEntry').innerText = `$${props.avgEntry.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})}`;
-
-            let currentVal = props.holdings * active.price;
-            let pnl = currentVal - props.invested;
-            let pnlPercent = props.invested > 0 ? (pnl / props.invested) * 100 : 0;
-            let pnlElement = document.getElementById('livePnl');
-            pnlElement.innerText = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)`;
-            pnlElement.className = `text-base font-semibold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'} mt-0.5`;
-
-            document.getElementById('watchlistContainer').innerHTML = state.coins.map(c => {
-                let p = getActiveCoinProps(c);
-                return `
-                <div class="flex justify-between items-center pb-2 border-b border-gray-800 cursor-pointer" onclick="selectCoin('${c.pair}')">
-                    <div><p class="text-sm font-bold text-yellow-400">${c.symbol} / USDT</p><p class="text-[10px] text-gray-400">Holdings: ${p.holdings.toFixed(4)}</p></div>
-                    <div class="text-right"><p class="text-sm font-bold text-green-400">$${c.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</p><span class="text-[10px] text-gray-500">Tap to trade</span></div>
-                </div>
-            `;}).join('');
-            renderTrades();
-        }
-
-        function changeActiveCoin() { state.activeCoin = document.getElementById('coinSelector').value; saveState(); }
-        function selectCoin(pair) { state.activeCoin = pair; saveState(); }
-
-        function renderTrades() {
-            const list = document.getElementById('tradesList');
-            let filteredTrades = state.trades.filter(t => t.mode === state.tradingMode);
-            document.getElementById('tradeCount').innerText = `${filteredTrades.length} Orders`;
-            if (filteredTrades.length === 0) { list.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">No trade history found for ${state.tradingMode} mode.</p>`; return; }
-            list.innerHTML = filteredTrades.map((t) => `
-                <div class="bg-[#0b0e11] p-3 rounded-lg border border-gray-800 flex justify-between items-center text-xs">
-                    <div><span class="font-bold ${t.type === 'BUY' ? 'text-green-400' : 'text-red-400'}">${t.type} ${t.symbol}</span><p class="text-gray-400 text-[10px]">Val: $${t.amount.toFixed(2)} | Price: $${t.entryPrice.toFixed(4)}</p></div>
-                    <div class="text-right"><span class="text-yellow-400 font-semibold">${t.coinAmount.toFixed(5)} ${t.symbol}</span><span class="block text-[10px] text-gray-500">${t.mode}</span></div>
-                </div>
-            `).join('');
-        }
-
-        async function fetchMarketPrices() {
             try {
-                let res = await fetch('https://api.binance.com/api/v3/ticker/price');
-                let data = await res.json();
-                state.coins.forEach(c => {
-                    let match = data.find(item => item.symbol === c.pair);
-                    if (match) c.price = parseFloat(match.price);
+                const res = await fetch('/api/deposit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
                 });
-                updateUI();
-            } catch (e) { console.log("Offline mode"); }
-        }
-        setInterval(fetchMarketPrices, 3000);
-        fetchMarketPrices();
-
-        function openAdminPanel() { document.getElementById('adminPasswordInput').value = ''; openModal('adminPasswordModal'); }
-        
-        function verifyAdminPassword() {
-            let pass = document.getElementById('adminPasswordInput').value;
-            if (pass === 'Mmoossaa35#') {
-                closeModal('adminPasswordModal');
-                document.getElementById('adminWalletInput').value = state.adminWallet;
-                document.getElementById('adminMinDepositInput').value = state.minDeposit;
-                document.getElementById('adminFeeInput').value = state.tradingFeePercent;
-                document.getElementById('adminRevenueDisplay').innerText = `$${state.adminRevenue.toFixed(2)} USDT`;
-                
-                let reqList = document.getElementById('adminWithdrawalsList');
-                if(!state.withdrawRequests || state.withdrawRequests.length === 0) {
-                    reqList.innerHTML = `<p class="text-[11px] text-gray-500">No pending requests.</p>`;
+                const data = await res.json();
+                if(data.success) {
+                    alert(data.message);
+                    location.reload();
                 } else {
-                    reqList.innerHTML = state.withdrawRequests.map((r, idx) => `
-                        <div class="bg-gray-900 p-2 rounded border border-gray-800 text-[11px] flex justify-between items-center">
-                            <div>
-                                <span class="text-yellow-400 font-bold">$${r.amount}</span> (${r.mode})<br>
-                                <span class="text-gray-400 text-[9px] break-all">To: ${r.address}</span>
-                            </div>
-                            <button onclick="approveWithdrawal(${idx})" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-1 rounded text-[10px]">Approve</button>
-                        </div>
-                    `).join('');
+                    alert(data.message);
                 }
-
-                openModal('adminModal');
-            } else { 
-                // Fixed: Removed the password leak from alert!
-                alert('Incorrect Password!'); 
-            }
+            } catch (e) { alert('Deposit request failed.'); }
         }
 
-        function saveAdminSettings() {
-            state.adminWallet = document.getElementById('adminWalletInput').value.trim();
-            state.minDeposit = parseFloat(document.getElementById('adminMinDepositInput').value);
-            state.tradingFeePercent = parseFloat(document.getElementById('adminFeeInput').value);
-            saveState();
-            closeModal('adminModal');
-            alert('Settings updated successfully!');
+        async function executeWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const address = document.getElementById('withdrawAddress').value;
+            if (!amount || !address) { alert('Fill all fields'); return; }
+
+            try {
+                const res = await fetch('/api/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, address })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if(data.success) location.reload();
+            } catch (e) { alert('Withdraw request failed.'); }
         }
 
-        function withdrawAdminRevenue() {
-            if(state.adminRevenue <= 0) { alert('No admin revenue/profit available to withdraw.'); return; }
-            alert(`Successfully transferred $${state.adminRevenue.toFixed(2)} USDT admin profit to your personal wallet (${state.adminWallet})!`);
-            state.adminRevenue = 0;
-            saveState();
-            document.getElementById('adminRevenueDisplay').innerText = `$0.00 USDT`;
+        async function executeSpotTrade() {
+            const amount = parseFloat(document.getElementById('orderAmount').value);
+            if (!amount || amount <= 0) { alert('Enter valid trade amount'); return; }
+
+            try {
+                const res = await fetch('/api/trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol: state.activeCoin,
+                        side: state.orderType,
+                        amount: amount,
+                        price: state.activePrice
+                    })
+                });
+                const data = await res.json();
+                alert(data.message);
+            } catch (e) { alert('Trade execution failed.'); }
         }
-
-        function addNewCoin() {
-            let symbol = document.getElementById('newCoinSymbol').value.toUpperCase().trim();
-            let pair = document.getElementById('newCoinPair').value.toUpperCase().trim();
-            if (!symbol || !pair) { alert('Please enter both symbol and pair'); return; }
-            state.coins.push({ 
-                symbol, pair, price: 1.00, 
-                demoHoldings: 0, demoInvested: 0, demoAvgEntry: 0,
-                realHoldings: 0, realInvested: 0, realAvgEntry: 0 
-            });
-            saveState();
-            document.getElementById('newCoinSymbol').value = '';
-            document.getElementById('newCoinPair').value = '';
-            alert('New coin added successfully!');
-        }
-
-        function executeSpotTrade() {
-            let val = parseFloat(document.getElementById('orderAmount').value);
-            let active = state.coins.find(c => c.pair === state.activeCoin) || state.coins[0];
-            let props = getActiveCoinProps(active);
-            let balance = getActiveBalance();
-
-            if (!val || val <= 0) { alert('Please enter a valid amount'); return; }
-
-            if (currentOrderMode === 'BUY') {
-                let fee = (val * state.tradingFeePercent) / 100;
-                let netVal = val - fee; 
-                
-                if (balance < val) { alert('Insufficient USDT balance!'); return; }
-                
-                setActiveBalance(balance - val);
-                state.adminRevenue += fee; 
-
-                let coinBought = netVal / active.price;
-                let newHoldings = props.holdings + coinBought;
-                let newInvested = props.invested + netVal;
-                let newAvgEntry = newHoldings > 0 ? newInvested / newHoldings : 0;
-
-                props.setHoldings(newHoldings);
-                props.setInvested(newInvested);
-                props.setAvgEntry(newAvgEntry);
-
-                state.trades.unshift({ symbol: active.symbol, type: 'BUY', amount: netVal, coinAmount: coinBought, entryPrice: active.price, mode: state.tradingMode });
-                alert(`Successfully Bought ${coinBought.toFixed(4)} ${active.symbol} (${state.tradingMode})! Fee: $${fee.toFixed(2)}`);
-            } else {
-                if (val > props.holdings) { val = props.holdings; }
-                if (props.holdings <= 0 || val <= 0) { alert(`No ${active.symbol} holdings available to sell!`); return; }
-                
-                let usdtGot = val * active.price;
-                let fee = (usdtGot * state.tradingFeePercent) / 100;
-                let netUsdt = usdtGot - fee; 
-
-                let remainingHoldings = props.holdings - val;
-                props.setHoldings(remainingHoldings);
-
-                let investedReduction = (val / (props.holdings + val)) * props.invested;
-                let remainingInvested = Math.max(0, props.invested - investedReduction);
-                props.setInvested(remainingInvested);
-
-                if (remainingHoldings <= 0) {
-                    props.setAvgEntry(0);
-                    props.setInvested(0);
-                }
-
-                setActiveBalance(getActiveBalance() + netUsdt);
-                state.adminRevenue += fee; 
-
-                state.trades.unshift({ symbol: active.symbol, type: 'SELL', amount: netUsdt, coinAmount: val, entryPrice: active.price, mode: state.tradingMode });
-                alert(`Successfully Sold ${val.toFixed(5)} ${active.symbol} for $${netUsdt.toFixed(2)} USDT (${state.tradingMode})! Fee: $${fee.toFixed(2)}`);
-            }
-            saveState();
-            document.getElementById('orderAmount').value = '';
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function confirmDeposit() {
-            let val = parseFloat(document.getElementById('depositInput').value);
-            if (val >= state.minDeposit) { 
-                setActiveBalance(getActiveBalance() + val);
-                saveState(); 
-                closeModal('depositModal');
-                alert(`Deposit recorded! $${val} USDT added to your ${state.tradingMode} account balance.`);
-            } else { alert(`Minimum deposit is $${state.minDeposit}`); }
-        }
-
-        function confirmWithdraw() {
-            let address = document.getElementById('witAddress').value.trim();
-            let val = parseFloat(document.getElementById('witAmountUsdt').value);
-            let balance = getActiveBalance();
-
-            if (!address) { alert('Please enter a wallet address.'); return; }
-            if (val > 0 && val <= balance) { 
-                setActiveBalance(balance - val);
-                if (!state.withdrawRequests) state.withdrawRequests = [];
-                state.withdrawRequests.push({ address: address, amount: val, mode: state.tradingMode });
-                saveState(); 
-                closeModal('withdrawModal');
-                alert(`Withdrawal request of $${val} USDT submitted successfully! Awaiting admin approval.`);
-            } else { alert('Invalid withdrawal amount or insufficient balance.'); }
-        }
-
-        function approveWithdrawal(index) {
-            let req = state.withdrawRequests[index];
-            state.withdrawRequests.splice(index, 1);
-            saveState();
-            alert(`Withdrawal request of $${req.amount} USDT approved and sent to ${req.address}!`);
-            closeModal('adminModal');
-        }
-
-        function resetData() { 
-            if(confirm('Are you sure you want to reset all data?')) {
-                localStorage.removeItem('cryptoStateV9'); 
-                location.reload(); 
-            }
-        }
-        
-        function addBonus() { 
-            state.demoUsdtBalance += 500; 
-            saveState(); 
-            closeModal('adminModal');
-            alert('+$500 Demo Bonus added successfully!');
-        }
-
-        updateUI();
     </script>
 </body>
 </html>
