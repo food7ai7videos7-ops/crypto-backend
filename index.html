@@ -44,7 +44,7 @@
     <div class="glass-card p-4 rounded-xl mx-4 mb-4">
         <div class="flex justify-between items-center mb-3">
             <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold p-1.5 rounded-lg border border-gray-700 focus:outline-none">
-                </select>
+            </select>
             <span class="text-xs text-green-400 font-semibold flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1.5"></span> LIVE BITGET</span>
         </div>
         <p class="text-[11px] text-gray-400 mb-0.5">MARKET PRICE</p>
@@ -71,7 +71,7 @@
     <div id="depositModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-2 text-yellow-400">Deposit USDT</h3>
-            <p class="text-xs text-gray-400 mb-1">Send funds to your Bitget deposit address:</p>
+            <p class="text-xs text-gray-400 mb-1">Apna funds is official Bitget address par bhejein:</p>
             <div id="displayDepositAddress" class="bg-[#0b0e11] p-2.5 rounded-lg border border-gray-700 text-xs text-yellow-300 font-mono break-all mb-3">Loading...</div>
             <label class="block text-xs text-gray-400 mb-1">Amount ($):</label>
             <input type="number" id="depositAmount" placeholder="Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
@@ -110,14 +110,14 @@
     <div id="adminDashboardModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-5 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-400">Admin Panel & Profit</h3>
+                <h3 class="text-lg font-bold text-blue-400">Admin Panel & Bitget API</h3>
                 <button onclick="closeModal('adminDashboardModal')" class="text-gray-400 hover:text-white text-lg">✕</button>
             </div>
 
             <label class="block text-xs text-gray-400 mb-1">Bitget Deposit Address:</label>
             <input type="text" id="adminAddressInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2">
             
-            <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="grid grid-cols-2 gap-2 mb-2">
                 <div>
                     <label class="block text-[10px] text-gray-400 mb-1">Min Deposit ($):</label>
                     <input type="number" id="adminMinDepositInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs">
@@ -127,7 +127,17 @@
                     <input type="number" id="adminFeeInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs">
                 </div>
             </div>
-            <button onclick="saveAdminSettings()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs mb-4">SAVE SETTINGS</button>
+
+            <label class="block text-[10px] text-yellow-400 mb-1">Bitget API Key:</label>
+            <input type="text" id="adminApiKeyInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2" placeholder="API Key">
+            
+            <label class="block text-[10px] text-yellow-400 mb-1">Bitget Secret Key:</label>
+            <input type="password" id="adminSecretInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2" placeholder="Secret Key">
+            
+            <label class="block text-[10px] text-yellow-400 mb-1">Bitget Passphrase:</label>
+            <input type="password" id="adminPassphraseInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-3" placeholder="Passphrase">
+
+            <button onclick="saveAdminSettings()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs mb-4">SAVE SETTINGS & KEYS</button>
 
             <h4 class="text-xs font-bold text-yellow-400 mb-2">Pending Deposits</h4>
             <div id="adminPendingDeposits" class="space-y-2 mb-4 text-xs"><p class="text-gray-500">No pending deposits.</p></div>
@@ -135,7 +145,7 @@
             <h4 class="text-xs font-bold text-red-400 mb-2">Pending Withdrawals</h4>
             <div id="adminPendingWithdrawals" class="space-y-2 mb-4 text-xs"><p class="text-gray-500">No pending withdrawals.</p></div>
 
-            <h4 class="text-xs font-bold text-blue-400 mb-2">Add New Crypto Coin</h4>
+            <h4 class="text-xs font-bold text-blue-400 mb-2">Add New Coin</h4>
             <div class="space-y-2 text-xs">
                 <input type="text" id="newCoinSymbol" placeholder="Symbol (e.g. SOLUSDT)" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white">
                 <input type="number" id="newCoinPrice" placeholder="Price (e.g. 185.40)" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white">
@@ -238,15 +248,16 @@
                 document.getElementById('adminAddressInput').value = data.adminConfig.depositAddress;
                 document.getElementById('adminMinDepositInput').value = data.adminConfig.minDeposit;
                 document.getElementById('adminFeeInput').value = data.adminConfig.tradingFeePercent;
+                document.getElementById('adminApiKeyInput').value = data.adminConfig.bitgetApiKey || '';
+                document.getElementById('adminSecretInput').value = data.adminConfig.bitgetSecret || '';
+                document.getElementById('adminPassphraseInput').value = data.adminConfig.bitgetPassphrase || '';
                 
-                // Pending deposits
                 document.getElementById('adminPendingDeposits').innerHTML = data.pendingDeposits.length ? data.pendingDeposits.map(d => `
                     <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded">
                         <span>+$${d.amount} USDT</span><button onclick="approveDep('${d.id}')" class="bg-green-600 px-2 py-1 rounded text-white font-bold">Approve</button>
                     </div>
                 `).join('') : '<p class="text-gray-500">No pending deposits.</p>';
 
-                // Pending withdrawals
                 document.getElementById('adminPendingWithdrawals').innerHTML = data.pendingWithdrawals.length ? data.pendingWithdrawals.map(w => `
                     <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded">
                         <span>-$${w.amount} USDT</span>
@@ -277,9 +288,18 @@
             const depositAddress = document.getElementById('adminAddressInput').value;
             const minDeposit = document.getElementById('adminMinDepositInput').value;
             const tradingFeePercent = document.getElementById('adminFeeInput').value;
-            const res = await fetch('/api/admin/update-settings', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ depositAddress, minDeposit, tradingFeePercent }) });
+            const bitgetApiKey = document.getElementById('adminApiKeyInput').value;
+            const bitgetSecret = document.getElementById('adminSecretInput').value;
+            const bitgetPassphrase = document.getElementById('adminPassphraseInput').value;
+
+            const res = await fetch('/api/admin/update-settings', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ depositAddress, minDeposit, tradingFeePercent, bitgetApiKey, bitgetSecret, bitgetPassphrase }) 
+            });
             const data = await res.json();
             showPopup('Settings', data.message);
+            fetchUserData();
         }
 
         async function addNewCoin() {
