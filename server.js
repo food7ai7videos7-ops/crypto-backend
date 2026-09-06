@@ -1,18 +1,11 @@
 const express = require('express');
+const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware (agar JSON data parse karna ho)
-app.use(express.json());
-
-// Root Route - Yeh aapki live website par show hoga
+// Serve static HTML file
 app.get('/', (req, res) => {
-  res.send('Crypto Backend is Live and Running!');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Agar aapke koi aur API routes hain, toh aap yahan niche add kar sakte hain:
-// app.get('/api/data', (req, res) => { ... });
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Server running'));
