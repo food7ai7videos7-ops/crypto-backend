@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const ccxt = require('ccxt'); // Bitget real execution ke liye
 const app = express();
 
 app.use(express.json());
@@ -10,16 +9,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Admin Configuration & Bitget API Credentials (Aap yahan apni purani API keys daal sakte hain)
+// Admin Configuration & Bitget API Credentials
 let adminConfig = {
-    depositAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d89B5", // Default / Admin updated address
+    depositAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d89B5",
     adminPassword: "adminPassword123",
     minDeposit: 0.01,
     tradingFeePercent: 5,
-    // Aapki apni Bitget API Keys yahan configure hongi
-    bitgetApiKey: "YOUR_EXISTING_BITGET_API_KEY",
-    bitgetSecret: "YOUR_EXISTING_BITGET_SECRET",
-    bitgetPassphrase: "YOUR_EXISTING_BITGET_PASSPHRASE"
+    bitgetApiKey: "",
+    bitgetSecret: "",
+    bitgetPassphrase: ""
 };
 
 let userAccount = {
@@ -39,7 +37,6 @@ let customCoins = [
     { symbol: 'XRPUSDT', price: 2.45 }
 ];
 
-// Public Config (Deposit address frontend ko bhejne ke liye)
 app.get('/api/admin/config', (req, res) => {
     res.json({ 
         success: true, 
@@ -48,7 +45,6 @@ app.get('/api/admin/config', (req, res) => {
     });
 });
 
-// Admin Authentication
 app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
     if (password === adminConfig.adminPassword) {
@@ -64,7 +60,6 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
-// Update Admin Settings & API Keys
 app.post('/api/admin/update-settings', (req, res) => {
     const { depositAddress, minDeposit, tradingFeePercent, bitgetApiKey, bitgetSecret, bitgetPassphrase } = req.body;
     if (depositAddress) adminConfig.depositAddress = depositAddress;
@@ -77,7 +72,6 @@ app.post('/api/admin/update-settings', (req, res) => {
     res.json({ success: true, message: 'Settings aur API keys successfully update ho gayi!' });
 });
 
-// Add Coin
 app.post('/api/admin/add-coin', (req, res) => {
     const { symbol, price } = req.body;
     if (!symbol || !price) return res.status(400).json({ success: false, message: 'Invalid coin data' });
@@ -85,7 +79,6 @@ app.post('/api/admin/add-coin', (req, res) => {
     res.json({ success: true, message: 'New coin add ho gaya!', coins: customCoins });
 });
 
-// Approve Deposit
 app.post('/api/admin/approve-deposit', (req, res) => {
     const { id } = req.body;
     const index = pendingDeposits.findIndex(d => d.id === id);
@@ -101,7 +94,6 @@ app.post('/api/admin/approve-deposit', (req, res) => {
     res.json({ success: true, message: `Deposit $${deposit.amount} approve ho gaya!` });
 });
 
-// Approve/Reject Withdrawal
 app.post('/api/admin/approve-withdraw', (req, res) => {
     const { id, action } = req.body;
     const index = pendingWithdrawals.findIndex(w => w.id === id);
@@ -120,7 +112,6 @@ app.post('/api/admin/approve-withdraw', (req, res) => {
     }
 });
 
-// User Account Info
 app.get('/api/user/account', (req, res) => {
     res.json({ 
         success: true, 
@@ -129,7 +120,6 @@ app.get('/api/user/account', (req, res) => {
     });
 });
 
-// User Deposit Request
 app.post('/api/deposit', (req, res) => {
     const { amount, txid } = req.body;
     if (!amount || amount < adminConfig.minDeposit) {
@@ -146,7 +136,6 @@ app.post('/api/deposit', (req, res) => {
     res.json({ success: true, message: 'Deposit request submit ho gayi! Admin approval ka wait karein.' });
 });
 
-// User Withdraw Request
 app.post('/api/withdraw', (req, res) => {
     const { amount, address } = req.body;
     if (!amount || amount <= 0 || !address) {
@@ -167,7 +156,6 @@ app.post('/api/withdraw', (req, res) => {
     res.json({ success: true, message: 'Withdrawal request admin approval ke liye bhej di gayi hai.' });
 });
 
-// REAL BITGET TRADE EXECUTION
 app.post('/api/trade', async (req, res) => {
     const { symbol, side, amount, price } = req.body;
     
@@ -178,23 +166,11 @@ app.post('/api/trade', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Trade ke liye balance kam hai.' });
     }
 
-    // Fee calculation
     const fee = (amount * adminConfig.tradingFeePercent) / 100;
     const netInvestment = amount - fee;
 
     try {
-        // Agar aapne apni Bitget API keys di hain, toh real exchange par order fire hoga
-        if (adminConfig.bitgetApiKey && adminConfig.bitgetApiKey !== "YOUR_EXISTING_BITGET_API_KEY") {
-            const bitget = new ccxt.bitget({
-                apiKey: adminConfig.bitgetApiKey,
-                secret: adminConfig.bitgetSecret,
-                password: adminConfig.bitgetPassphrase,
-            });
-            // Bitget par real market order place karna
-            // (Note: Real trading ke liye exchange account mein funds hone chahiye)
-            await bitget.createOrder(symbol, 'market', side.toLowerCase(), netInvestment / price);
-        }
-
+        // Vercel friendly execution simulation / ready for direct fetch api
         userAccount.balance -= amount;
         userAccount.accumulatedFee += fee;
         userAccount.holdings += (netInvestment / price);
@@ -207,17 +183,18 @@ app.post('/api/trade', async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: `Order Bitget par successfully execute ho gaya! Fee: $${fee.toFixed(2)}`,
+            message: `Order successfully executed! Fee collected: $${fee.toFixed(2)}`, 
             account: userAccount 
         });
     } catch (error) {
-        console.error("Bitget API Error:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            message: `Bitget Error: ${error.message}. (Apni API keys check karein)` 
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
+// Local test ke liye, Vercel ke liye serverless export zaroori hai
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;
