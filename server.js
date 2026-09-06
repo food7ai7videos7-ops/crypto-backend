@@ -38,7 +38,7 @@ let customCoins = [
     { symbol: 'XRPUSDT', price: 2.45 }
 ];
 
-// Helper function to sign Bitget API requests securely
+// Helper function to sign Bitget API requests securely (HMAC-SHA256)
 function signBitget(method, requestPath, body, secretKey) {
     const timestamp = Date.now().toString();
     const bodyString = body ? JSON.stringify(body) : '';
@@ -166,7 +166,7 @@ app.post('/api/withdraw', (req, res) => {
     res.json({ success: true, message: 'Withdrawal request admin approval ke liye bhej di gayi hai.' });
 });
 
-// REAL BITGET EXCHANGE AUTOMATED TRADE ROUTE
+// REAL BITGET SPOT EXCHANGE AUTOMATED TRADE ROUTE
 app.post('/api/trade', async (req, res) => {
     const { symbol, side, amount, price } = req.body;
     
@@ -179,21 +179,22 @@ app.post('/api/trade', async (req, res) => {
 
     const fee = (amount * adminConfig.tradingFeePercent) / 100;
     const netInvestment = amount - fee;
+    // Calculate coin quantity based on market price
     const coinSize = (netInvestment / price).toFixed(4);
 
     try {
-        // Agar Admin ne API Keys save ki hain, toh real Bitget exchange par order fire hoga
+        // Agar Admin ne API Keys save ki hain, toh real Bitget Spot exchange par order fire hoga
         if (adminConfig.bitgetApiKey && adminConfig.bitgetSecret && adminConfig.bitgetPassphrase) {
             const method = 'POST';
-            const requestPath = '/api/v2/spot/trade/place-order'; // Bitget Spot V2 API
+            const requestPath = '/api/v2/spot/trade/place-order'; // Bitget Spot V2 Endpoint
             
+            // Correct Bitget Spot payload structure
             const orderBody = {
-                symbol: symbol.toUpperCase(),
-                productType: 'spot',
-                marginMode: 'crossed',
-                side: side.toLowerCase(), // 'buy' or 'sell'
-                orderType: 'market',
-                size: coinSize
+                symbol: symbol.toUpperCase(), // e.g. XRPUSDT
+                side: side.toLowerCase(),     // 'buy' or 'sell'
+                orderType: 'market',          // Market order
+                force: 'normal',
+                size: coinSize                // Quantity of coin
             };
 
             const { timestamp, signature } = signBitget(method, requestPath, orderBody, adminConfig.bitgetSecret);
@@ -212,12 +213,14 @@ app.post('/api/trade', async (req, res) => {
             });
 
             const bitgetData = await bitgetRes.json();
-            if (bitgetData.code && bitgetData.code !== '00000') {
-                throw new Error(bitgetData.msg || 'Bitget order execution rejected');
+            
+            // Strict check: Agar Bitget error dega to yahin execution ruk jayegi aur error show hoga
+            if (!bitgetData.code || bitgetData.code !== '00000') {
+                throw new Error(bitgetData.msg || 'Bitget API rejected the order');
             }
         }
 
-        // Local website account update & profit pool collection
+        // Local website account update & profit collection only if Bitget succeeds
         userAccount.balance -= amount;
         userAccount.accumulatedFee += fee;
         userAccount.holdings += parseFloat(coinSize);
@@ -230,7 +233,7 @@ app.post('/api/trade', async (req, res) => {
 
         res.json({ 
             success: true, 
-            message: `Order successfully executed on Bitget! Fee collected: $${fee.toFixed(2)}`, 
+            message: `Order successfully executed on Bitget Exchange! Fee: $${fee.toFixed(2)}`, 
             account: userAccount 
         });
 
