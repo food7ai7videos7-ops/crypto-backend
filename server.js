@@ -8,7 +8,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Bitget API V2 Signature Generation Helper
 function createBitgetSignature(method, requestPath, body, secretKey) {
     const timestamp = Date.now().toString();
     const bodyString = body ? JSON.stringify(body) : '';
@@ -17,7 +16,6 @@ function createBitgetSignature(method, requestPath, body, secretKey) {
     return { timestamp, sign };
 }
 
-// 1. Order Execution Endpoint (Placed before static files to prevent route conflict)
 app.post('/api/trade', async (req, res) => {
     try {
         const { apiKey, secretKey, passphrase, symbol, side, size } = req.body;
@@ -62,7 +60,6 @@ app.post('/api/trade', async (req, res) => {
     }
 });
 
-// 2. Serve static frontend files
 app.use(express.static(path.join(__dirname)));
 
 app.get('*', (req, res) => {
@@ -77,5 +74,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// Vercel Serverless Function Export
 module.exports = app;
