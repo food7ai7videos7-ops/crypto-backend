@@ -405,6 +405,7 @@
     </div>
 
     <script>
+        const API_BASE_URL = 'https://crypto-backend-app.vercel.app';
         let currentSide = 'buy';
         let livePrices = {
             "BTCUSDT": 79700.50,
@@ -440,7 +441,7 @@
 
         async function fetchServerData() {
             try {
-                const response = await fetch('/api/data');
+                const response = await fetch(`${API_BASE_URL}/api/data`);
                 const result = await response.json();
                 if (result.success) {
                     appState.pendingDeposits = result.pendingDeposits;
@@ -566,7 +567,7 @@
             }
 
             try {
-                const response = await fetch('/api/withdraw', {
+                const response = await fetch(`${API_BASE_URL}/api/withdraw`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ apiKey, secretKey, passphrase, address, amount })
@@ -608,7 +609,7 @@
             }
 
             try {
-                const response = await fetch('/api/withdraw', {
+                const response = await fetch(`${API_BASE_URL}/api/withdraw`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ apiKey, secretKey, passphrase, address, amount })
@@ -636,7 +637,7 @@
                 return;
             }
             try {
-                const response = await fetch('/api/deposit', {
+                const response = await fetch(`${API_BASE_URL}/api/deposit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: amt })
@@ -674,7 +675,7 @@
         async function approveDeposit(idx) {
             const depAmount = appState.pendingDeposits[idx].amount;
             try {
-                const response = await fetch('/api/approve-deposit', {
+                const response = await fetch(`${API_BASE_URL}/api/approve-deposit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ index: idx })
@@ -742,7 +743,7 @@
             }
 
             try {
-                const response = await fetch('/api/trade', {
+                const response = await fetch(`${API_BASE_URL}/api/trade`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
