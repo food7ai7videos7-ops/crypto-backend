@@ -1,15 +1,16 @@
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
-const path = require('path');
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files (index.html, CSS, etc.) directly from root
-app.use(express.static(path.join(__dirname)));
+// Test Route taaki browser par 500 ki bajaye message aaye
+app.get('/', (req, res) => {
+    res.send('Backend API is running successfully!');
+});
 
 // Bitget API V2 Signature Generation Helper
 function createBitgetSignature(method, requestPath, body, secretKey) {
@@ -73,5 +74,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// Vercel Serverless Function Export
 module.exports = app;
