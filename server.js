@@ -1,10 +1,15 @@
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static frontend files (index.html, CSS, etc.) directly from root
+app.use(express.static(path.join(__dirname)));
 
 // Bitget API V2 Signature Generation Helper
 function createBitgetSignature(method, requestPath, body, secretKey) {
@@ -28,7 +33,6 @@ app.post('/api/trade', async (req, res) => {
         const requestPath = '/api/v2/spot/trade/place-order';
         const host = 'https://api.bitget.com';
 
-        // Bitget Spot V2 Market Order Payload (delegateAmount completely removed)
         const body = {
             symbol: symbol,
             productType: 'USDT-FUTURES',
@@ -63,12 +67,11 @@ app.post('/api/trade', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Local development ke liye server listen
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
 }
 
-// Vercel Serverless Function Export (Must for 500 error fix)
+// Vercel Serverless Function Export
 module.exports = app;
