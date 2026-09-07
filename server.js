@@ -8,7 +8,13 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from root directory
+app.use(express.static(__dirname));
+
+// Root route to serve index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // In-memory storage for Vercel serverless environment
 let serverState = {
@@ -127,7 +133,7 @@ app.post('/api/withdraw', async (req, res) => {
     }
 });
 
-// Vercel serverless compatible port/export setup
+// Vercel serverless export
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
