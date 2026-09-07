@@ -31,9 +31,9 @@ app.post('/api/trade', async (req, res) => {
         // Bitget Spot V2 Market Order Payload (delegateAmount completely removed)
         const body = {
             symbol: symbol,
-            productType: 'USDT-FUTURES', // ya spot ke liye jo bhi aapka setup ho
+            productType: 'USDT-FUTURES',
             marginMode: 'crossed',
-            side: side.toLowerCase(), // 'buy' or 'sell'
+            side: side.toLowerCase(),
             orderType: 'market',
             size: size.toString(),
             force: 'gtc'
@@ -62,6 +62,13 @@ app.post('/api/trade', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+
+// Local development ke liye server listen
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+// Vercel Serverless Function Export (Must for 500 error fix)
+module.exports = app;
