@@ -1,122 +1,141 @@
 const express = require('express');
-const crypto = require('crypto');
+const cors = require('cors');
 const axios = require('axios');
+const crypto = require('crypto');
 const path = require('path');
 
 const app = express();
-
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
-function createBitgetSignature(method, requestPath, body, secretKey) {
-    const timestamp = Date.now().toString();
-    const bodyString = body ? JSON.stringify(body) : '';
-    const preSignString = timestamp + method.toUpperCase() + requestPath + bodyString;
-    const sign = crypto.createHmac('sha256', secretKey).update(preSignString).digest('base64');
-    return { timestamp, sign };
-}
+// Serve static files from root directory
+app.use(express.static(__dirname));
 
-// 100% Production Ready Real Bitget Trade Route
-app.post('/api/trade', async (req, res) => {
-    try {
-        const { apiKey, secretKey, passphrase, symbol, side, size } = req.body;
-
-        if (!apiKey || !secretKey || !passphrase || !symbol || !side || !size) {
-            return res.status(400).json({ success: false, error: 'Missing required trading parameters' });
-        }
-
-        const method = 'POST';
-        const requestPath = '/api/v2/spot/trade/place-order';
-        const host = 'https://api.bitget.com';
-
-        const orderSide = side.toLowerCase();
-        const formattedVal = parseFloat(size).toFixed(4).toString();
-
-        const body = {
-            symbol: symbol.toUpperCase(),
-            side: orderSide,
-            orderType: 'market',
-            force: 'gtc',
-            size: formattedVal // Bitget V2 market orders ke liye size parameter ab properly set hai
-        };
-
-        if (orderSide === 'buy') {
-            body.amount = parseFloat(size).toFixed(2).toString();
-        }
-
-        const { timestamp, sign } = createBitgetSignature(method, requestPath, body, secretKey);
-
-        const response = await axios.post(`${host}${requestPath}`, body, {
-            headers: {
-                'ACCESS-KEY': apiKey,
-                'ACCESS-SIGN': sign,
-                'ACCESS-TIMESTAMP': timestamp,
-                'ACCESS-PASSPHRASE': passphrase,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        res.json({ success: true, data: response.data });
-    } catch (error) {
-        const errData = error.response?.data;
-        const errorMsg = errData ? JSON.stringify(errData) : error.message;
-        console.error('Bitget V2 Live Error:', errorMsg);
-        
-        res.status(400).json({ 
-            success: false, 
-            error: `Bitget API Error: ${errorMsg}` 
-        });
-    }
-});
-
-// Real Withdrawal Route
-app.post('/api/withdraw', async (req, res) => {
-    try {
-        const { apiKey, secretKey, passphrase, address, amount } = req.body;
-
-        if (!apiKey || !secretKey || !passphrase || !address || !amount) {
-            return res.status(400).json({ success: false, error: 'Missing withdrawal parameters' });
-        }
-
-        const method = 'POST';
-        const requestPath = '/api/v2/spot/wallet/withdrawal';
-        const host = 'https://api.bitget.com';
-
-        const body = {
-            coin: 'USDT',
-            transferType: 'on_chain',
-            address: address,
-            amount: parseFloat(amount).toFixed(2).toString(),
-            chain: 'TRC20'
-        };
-
-        const { timestamp, sign } = createBitgetSignature(method, requestPath, body, secretKey);
-
-        const response = await axios.post(`${host}${requestPath}`, body, {
-            headers: {
-                'ACCESS-KEY': apiKey,
-                'ACCESS-SIGN': sign,
-                'ACCESS-TIMESTAMP': timestamp,
-                'ACCESS-PASSPHRASE': passphrase,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        res.json({ success: true, data: response.data });
-    } catch (error) {
-        const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-        res.status(400).json({ success: false, error: `Bitget Withdrawal Error: ${errorMsg}` });
-    }
-});
-
-app.use(express.static(path.join(__dirname)));
-
-app.get('*', (req, res) => {
+// Root route to serve index.html
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
+// Global storage for Vercel serverless to sync across devices
+global.pendingDepositsStorage = global.pendingDepositsStorage || [];
+global.adminProfitStorage = global.adminProfitStorage || 0.01;
 
+// Get live data endpoint for sync
+app.get('/api/data', (req, res) => {
+    res.json({ 
+        success: true, 
+        pendingDeposits: global.pendingDepositsStorage, 
+        adminProfit: global.adminProfitStorage 
+    });
+});
+
+// Submit deposit endpoint from any device
+app.post('/api/deposit', (req, res) => {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) {
+        return res.status(400).json({ success: false, error: 'Invalid amount' });
+    }
+    const newDep = { id: Date.now(), amount: parseFloat(amount) };
+    global.pendingDepositsStorage.push(newDep);
+    res.json({ success: true, message: 'Deposit request submitted successfully' });
+});
+
+// Approve deposit endpoint
+app.post('/api/approve-deposit', (req, res) => {
+    const { index } = req.body;
+    if (global.pendingDepositsStorage && global.pendingDepositsStorage[index]) {
+        global.pendingDepositsStorage.splice(index, 1);
+        return res.json({ success: true });
+    }
+    res.status(400).json({ success: false, error: 'Invalid deposit index' });
+});
+
+// Bitget Signature Generator function
+function createBitgetSignature(method, requestPath, body, timestamp, secretKey) {
+    const message = timestamp + method.toUpperCase() + requestPath + (body ? JSON.stringify(body) : '');
+    return crypto.createHmac('sha256', secretKey).update(message).digest('base64');
+}
+
+// Bitget Trade Endpoint
+app.post('/api/trade', async (req, res) => {
+    const { apiKey, secretKey, passphrase, symbol, side, size } = req.body;
+    
+    const method = 'POST';
+    const requestPath = '/api/v2/spot/trade/place-order';
+    const timestamp = Date.now().toString();
+    
+    const body = {
+        symbol: symbol,
+        productType: 'usdt-spot',
+        side: side.toLowerCase(),
+        orderType: 'market',
+        size: size.toString(),
+        force: 'gtc'
+    };
+
+    const sign = createBitgetSignature(method, requestPath, body, timestamp, secretKey);
+
+    try {
+        const response = await axios.post('https://api.bitget.com' + requestPath, body, {
+            headers: {
+                'ACCESS-KEY': apiKey,
+                'ACCESS-SIGN': sign,
+                'ACCESS-PASSPHRASE': passphrase,
+                'ACCESS-TIMESTAMP': timestamp,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.data && response.data.code === '00000') {
+            res.json({ success: true, data: response.data.data });
+        } else {
+            res.json({ success: false, error: response.data.msg || 'Bitget execution failed' });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.response?.data?.msg || error.message });
+    }
+});
+
+// Bitget Withdrawal Endpoint
+app.post('/api/withdraw', async (req, res) => {
+    const { apiKey, secretKey, passphrase, address, amount } = req.body;
+
+    const method = 'POST';
+    const requestPath = '/api/v2/spot/wallet/withdrawal';
+    const timestamp = Date.now().toString();
+
+    const body = {
+        coin: 'USDT',
+        transferType: 'on_chain',
+        address: address,
+        amount: amount.toString(),
+        chain: 'usdt_trc20'
+    };
+
+    const sign = createBitgetSignature(method, requestPath, body, timestamp, secretKey);
+
+    try {
+        const response = await axios.post('https://api.bitget.com' + requestPath, body, {
+            headers: {
+                'ACCESS-KEY': apiKey,
+                'ACCESS-SIGN': sign,
+                'ACCESS-PASSPHRASE': passphrase,
+                'ACCESS-TIMESTAMP': timestamp,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.data && response.data.code === '00000') {
+            res.json({ success: true, data: response.data.data });
+        } else {
+            res.json({ success: false, error: response.data.msg || 'Withdrawal failed' });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.response?.data?.msg || error.message });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
