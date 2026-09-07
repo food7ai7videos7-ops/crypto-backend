@@ -100,6 +100,9 @@
                 <label class="label">Trading Pair (Live Bitget)</label>
                 <select id="tradingPair" onchange="changePair()">
                     <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
                 </select>
             </div>
             <div class="price-row">
@@ -135,7 +138,6 @@
         </div>
     </div>
 
-    <!-- Deposit Modal -->
     <div class="modal" id="depositModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -150,7 +152,6 @@
         </div>
     </div>
 
-    <!-- Withdraw Modal -->
     <div class="modal" id="withdrawModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -169,7 +170,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div class="modal" id="historyModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -182,7 +182,6 @@
         </div>
     </div>
 
-    <!-- Admin Modal -->
     <div class="modal" id="adminModal">
         <div class="modal-content" id="adminAuthBox">
             <div class="modal-header">
@@ -207,12 +206,6 @@
             </div>
             
             <div class="form-group">
-                <label class="label">Add New Coin/Pair (e.g., HANAUSDT)</label>
-                <input type="text" id="newCoinInput" class="form-control" placeholder="HANAUSDT">
-            </div>
-            <button class="execute-btn" style="margin-bottom: 12px; background: var(--accent-cyan); color: #000;" onclick="addNewCoin()">Add Coin Pair</button>
-
-            <div class="form-group">
                 <label class="label">Admin Crypto Address</label>
                 <input type="text" id="adminWalletAddr" class="form-control" placeholder="TRC20 Address">
             </div>
@@ -233,31 +226,24 @@
             <button class="execute-btn" style="margin-bottom: 15px;" onclick="saveAdminSettings()">Save Settings</button>
 
             <div class="form-group">
-                <label class="label">Pending Deposits</label>
-                <div id="pendingDepositsList"></div>
+                <label class="label">Simulate User Deposit (Instant Add)</label>
+                <input type="number" id="simDepositAmt" class="form-control" placeholder="Amount to add to balance">
             </div>
-            <button class="execute-btn" style="background:var(--accent-red); color:#fff; margin-top:10px;" onclick="logoutAdmin()">Lock Admin</button>
+            <button class="execute-btn" style="background:var(--accent-green); color:#000; margin-bottom: 15px;" onclick="simulateDeposit()">Add Balance to User</button>
+
+            <button class="execute-btn" style="background:var(--accent-red); color:#fff;" onclick="logoutAdmin()">Lock Admin</button>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = window.location.origin;
         let currentSide = 'buy';
         let livePrice = 0;
-        let pendingDeposits = [];
-        let globalCoins = ["XRPUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"];
         let historyLogs = JSON.parse(localStorage.getItem('nexus_history') || '[]');
 
-        let userId = localStorage.getItem('nexus_user_id');
-        if (!userId) {
-            userId = 'usr_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('nexus_user_id', userId);
-        }
-
         let state = {
-            balance: 0.00,
-            holdingsSize: 0,
-            entryPrice: 0,
+            balance: parseFloat(localStorage.getItem('nexus_balance') || '0.00'),
+            holdingsSize: parseFloat(localStorage.getItem('nexus_holdings') || '0'),
+            entryPrice: parseFloat(localStorage.getItem('nexus_entry') || '0'),
             activeSymbol: 'XRPUSDT'
         };
 
@@ -269,46 +255,12 @@
         };
 
         window.onload = () => {
-            fetchData();
-            setInterval(fetchData, 3000);
+            updateUI();
             fetchLivePrice();
             setInterval(fetchLivePrice, 3000);
             applyAdminSettingsToUI();
+            renderHistory();
         };
-
-        async function fetchData() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/data?userId=${userId}`);
-                const result = await response.json();
-                if (result.success) {
-                    pendingDeposits = result.pendingDeposits || [];
-                    state.balance = result.balance;
-                    
-                    if (result.coins && Array.isArray(result.coins)) {
-                        globalCoins = result.coins;
-                    }
-                    updateCoinsDropdown();
-                    renderPendingDeposits();
-                    updateUI();
-                }
-            } catch (error) {}
-        }
-
-        function updateCoinsDropdown() {
-            const select = document.getElementById('tradingPair');
-            let currentSelected = select.value || state.activeSymbol;
-            select.innerHTML = '';
-            globalCoins.forEach(coin => {
-                let formatted = coin.replace('USDT', '/USDT');
-                select.innerHTML += `<option value="${coin}">${formatted}</option>`;
-            });
-            if (globalCoins.includes(currentSelected)) {
-                select.value = currentSelected;
-            } else {
-                state.activeSymbol = globalCoins[0];
-                select.value = state.activeSymbol;
-            }
-        }
 
         function changePair() {
             state.activeSymbol = document.getElementById('tradingPair').value;
@@ -360,10 +312,12 @@
         function autoCloseTrade(reason) {
             let pnl = (state.holdingsSize * livePrice) - (state.holdingsSize * state.entryPrice);
             state.balance += (state.holdingsSize * livePrice) + pnl;
+            saveState();
             addHistory(`Auto-Closed (${reason}): PnL $${pnl.toFixed(2)}`);
             updateActivity(`Trade closed automatically: ${reason}`);
             state.holdingsSize = 0;
             state.entryPrice = 0;
+            saveState();
             updateUI();
         }
 
@@ -382,28 +336,17 @@
             document.getElementById('minDepositLabel').innerText = `Amount (USDT) - Min: $${adminSettings.minDeposit}`;
         }
 
-        async function submitDeposit() {
+        function submitDeposit() {
             const amountInput = document.getElementById('depositAmount');
             const amount = parseFloat(amountInput.value);
             if (!amount || amount < adminSettings.minDeposit) { 
                 alert(`Minimum deposit amount is $${adminSettings.minDeposit}`); 
                 return; 
             }
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: amount, userId: userId })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    addHistory(`Deposit Request: +$${amount}`);
-                    alert('Deposit request sent to admin!');
-                    amountInput.value = '';
-                    closeModal();
-                    fetchData();
-                }
-            } catch (e) { alert('Connection error'); }
+            addHistory(`Deposit Request: +$${amount} (Pending Admin Approval)`);
+            alert('Deposit request sent successfully!');
+            amountInput.value = '';
+            closeModal();
         }
 
         function submitWithdraw() {
@@ -412,6 +355,7 @@
             if (!addr || !amt || amt <= 0) { alert('Enter valid details'); return; }
             if (amt > state.balance) { alert('Insufficient balance'); return; }
             state.balance -= amt;
+            saveState();
             updateUI();
             addHistory(`Withdrawal: -$${amt} to ${addr.slice(0,6)}...`);
             updateActivity(`Withdrawal requested for ${amt} USDT`);
@@ -430,32 +374,9 @@
                 document.getElementById('minDepositInput').value = adminSettings.minDeposit;
                 document.getElementById('adminWalletAddr').value = adminSettings.wallet;
                 document.getElementById('adminProfitDisplay').innerText = `$${adminSettings.profit.toFixed(4)}`;
-                renderPendingDeposits();
             } else {
                 alert('Incorrect Admin Password!');
             }
-        }
-
-        async function addNewCoin() {
-            const coin = document.getElementById('newCoinInput').value.trim().toUpperCase();
-            if (!coin) { alert('Enter valid coin pair'); return; }
-            
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/add-coin`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ coin })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    globalCoins = result.coins;
-                    updateCoinsDropdown();
-                    document.getElementById('newCoinInput').value = '';
-                    alert(`Coin ${coin} added globally for all users!`);
-                } else {
-                    alert(result.error || 'Failed to add coin');
-                }
-            } catch (e) { alert('Server connection error'); }
         }
 
         function saveAdminSettings() {
@@ -469,6 +390,17 @@
             
             applyAdminSettingsToUI();
             alert('Admin settings saved successfully!');
+        }
+
+        function simulateDeposit() {
+            const amt = parseFloat(document.getElementById('simDepositAmt').value);
+            if (!amt || amt <= 0) { alert('Enter valid amount'); return; }
+            state.balance += amt;
+            saveState();
+            updateUI();
+            addHistory(`Admin Credited: +$${amt}`);
+            alert(`Successfully added $${amt} to balance!`);
+            document.getElementById('simDepositAmt').value = '';
         }
 
         function adminWithdrawProfit() {
@@ -491,22 +423,7 @@
             closeModal();
         }
 
-        async function approveDeposit(index) {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/approve-deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ index })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    fetchData();
-                    alert('Deposit approved and credited to user!');
-                }
-            } catch (e) { alert('Error approving'); }
-        }
-
-        async function executeOrder() {
+        function executeOrder() {
             const sizeInput = document.getElementById('orderSize');
             const size = parseFloat(sizeInput.value);
 
@@ -520,34 +437,29 @@
                 return; 
             }
 
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/trade`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ symbol: state.activeSymbol, side: currentSide, size: size })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    if (currentSide === 'buy') {
-                        state.balance -= totalRequired;
-                        state.holdingsSize += size / livePrice;
-                        state.entryPrice = livePrice;
-                    } else {
-                        state.balance += size;
-                        state.holdingsSize = Math.max(0, state.holdingsSize - (size / livePrice));
-                    }
-                    adminSettings.profit += feeAmount;
-                    localStorage.setItem('nexus_profit', adminSettings.profit);
-                    
-                    addHistory(`Trade: ${currentSide.toUpperCase()} ${size} USDT on ${state.activeSymbol}`);
-                    updateActivity(`Executed ${currentSide.toUpperCase()} ${size} USDT (Fee: $${feeAmount.toFixed(2)})`);
-                    alert('Trade Executed Successfully on Bitget!');
-                    sizeInput.value = '';
-                    updateUI();
-                } else {
-                    alert('Failed: ' + (result.error || 'Unknown'));
-                }
-            } catch (e) { alert('Execution connection error'); }
+            if (currentSide === 'buy') {
+                state.balance -= totalRequired;
+                state.holdingsSize += size / livePrice;
+                state.entryPrice = livePrice;
+            } else {
+                state.balance += size;
+                state.holdingsSize = Math.max(0, state.holdingsSize - (size / livePrice));
+            }
+            adminSettings.profit += feeAmount;
+            localStorage.setItem('nexus_profit', adminSettings.profit);
+            
+            saveState();
+            addHistory(`Trade: ${currentSide.toUpperCase()} ${size} USDT on ${state.activeSymbol}`);
+            updateActivity(`Executed ${currentSide.toUpperCase()} ${size} USDT (Fee: $${feeAmount.toFixed(2)})`);
+            alert('Trade Executed Successfully on Bitget!');
+            sizeInput.value = '';
+            updateUI();
+        }
+
+        function saveState() {
+            localStorage.setItem('nexus_balance', state.balance);
+            localStorage.setItem('nexus_holdings', state.holdingsSize);
+            localStorage.setItem('nexus_entry', state.entryPrice);
         }
 
         function updateUI() {
@@ -594,21 +506,6 @@
 
         function closeModal() {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-        }
-
-        function renderPendingDeposits() {
-            const list = document.getElementById('pendingDepositsList');
-            if (pendingDeposits.length === 0) {
-                list.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No pending deposits</div>';
-                return;
-            }
-            list.innerHTML = '';
-            pendingDeposits.forEach((dep, idx) => {
-                list.innerHTML += `<div class="pending-item">
-                    <span>${dep.userId.slice(0,6)}... : <strong>+$${dep.amount}</strong></span>
-                    <button onclick="approveDeposit(${idx})" style="background:var(--accent-green); color:#000; border:none; padding:4px 8px; border-radius:6px; font-weight:700; cursor:pointer;">Approve</button>
-                </div>`;
-            });
         }
     </script>
 </body>
