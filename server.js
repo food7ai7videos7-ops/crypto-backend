@@ -30,12 +30,10 @@ app.post('/api/trade', async (req, res) => {
 
         const body = {
             symbol: symbol,
-            productType: 'USDT-FUTURES',
-            marginMode: 'crossed',
             side: side.toLowerCase(),
             orderType: 'market',
-            size: size.toString(),
-            force: 'gtc'
+            force: 'gtc',
+            size: size.toString()
         };
 
         const { timestamp, sign } = createBitgetSignature(method, requestPath, body, secretKey);
