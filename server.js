@@ -30,18 +30,18 @@ app.post('/api/trade', async (req, res) => {
         const host = 'https://api.bitget.com';
 
         const orderSide = side.toLowerCase();
+        const formattedVal = parseFloat(size).toFixed(4).toString();
+
         const body = {
             symbol: symbol.toUpperCase(),
             side: orderSide,
             orderType: 'market',
-            force: 'gtc'
+            force: 'gtc',
+            size: formattedVal // Bitget V2 market orders ke liye size parameter ab properly set hai
         };
 
-        // Bitget V2 Strict Rule: BUY ke liye sirf 'amount' (USDT), SELL ke liye sirf 'size' (Quantity)
         if (orderSide === 'buy') {
             body.amount = parseFloat(size).toFixed(2).toString();
-        } else {
-            body.size = parseFloat(size).toFixed(4).toString();
         }
 
         const { timestamp, sign } = createBitgetSignature(method, requestPath, body, secretKey);
