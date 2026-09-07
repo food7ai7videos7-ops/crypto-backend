@@ -8,8 +8,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files (index.html, etc.) directly from root
+// Serve static frontend files from root
 app.use(express.static(path.join(__dirname)));
+
+// Fallback explicit route for index.html just in case
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Bitget API V2 Signature Generation Helper
 function createBitgetSignature(method, requestPath, body, secretKey) {
