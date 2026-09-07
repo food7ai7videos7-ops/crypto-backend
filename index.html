@@ -405,7 +405,9 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://crypto-backend-app.vercel.app';
+        // Dynamic origin detection to prevent connection errors on other devices
+        const API_BASE_URL = window.location.origin;
+        
         let currentSide = 'buy';
         let livePrices = {
             "BTCUSDT": 79700.50,
