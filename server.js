@@ -8,14 +8,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname)));
-
-// Root fallback route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 // Bitget API V2 Signature Generation Helper
 function createBitgetSignature(method, requestPath, body, secretKey) {
     const timestamp = Date.now().toString();
@@ -25,7 +17,7 @@ function createBitgetSignature(method, requestPath, body, secretKey) {
     return { timestamp, sign };
 }
 
-// Order Execution Endpoint
+// 1. Order Execution Endpoint (Placed before static files to prevent route conflict)
 app.post('/api/trade', async (req, res) => {
     try {
         const { apiKey, secretKey, passphrase, symbol, side, size } = req.body;
@@ -68,6 +60,13 @@ app.post('/api/trade', async (req, res) => {
             error: error.response?.data?.message || error.message 
         });
     }
+});
+
+// 2. Serve static frontend files
+app.use(express.static(path.join(__dirname)));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
