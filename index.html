@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Exchanger - Bitget Trading Panel</title>
+    <title>Pro Exchanger</title>
     <style>
         * {
             box-sizing: border-box;
@@ -110,8 +110,8 @@
             font-size: 14px;
         }
         .side-btn.buy {
-            background: #0ecb81;
-            color: #000;
+            background: #2a2e39;
+            color: #848e9c;
         }
         .side-btn.sell {
             background: #2a2e39;
@@ -154,12 +154,33 @@
             font-size: 16px;
             cursor: pointer;
         }
+        .activity-section {
+            background: #1e222d;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .activity-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #848e9c;
+        }
+        .activity-list {
+            font-size: 12px;
+            color: #b7bdc6;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #2a2e39;
+        }
         /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             justify-content: center;
             align-items: center;
             padding: 20px;
@@ -170,11 +191,18 @@
             border-radius: 10px;
             width: 100%;
             max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-content h3 {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-size: 16px;
             color: #f0b90b;
+        }
+        .modal-content p {
+            font-size: 13px;
+            color: #848e9c;
+            margin-bottom: 8px;
         }
         .modal-content input {
             width: 100%;
@@ -201,6 +229,8 @@
         }
         .btn-save { background: #f0b90b; color: #000; }
         .btn-cancel { background: #2a2e39; color: #fff; }
+        .btn-approve { background: #0ecb81; color: #000; padding: 6px 12px; font-size: 12px; border-radius: 4px; border:none; cursor:pointer;}
+        .pending-item { display: flex; justify-content: space-between; align-items: center; background: #2a2e39; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -209,8 +239,8 @@
     <div class="header">
         <div class="logo">PRO EXCHANGER</div>
         <div class="nav-buttons">
-            <button onclick="alert('Feature coming soon')">Deposit</button>
-            <button onclick="alert('Feature coming soon')">Withdraw</button>
+            <button onclick="openDepositModal()">Deposit</button>
+            <button onclick="alert('Withdrawals currently unavailable')">Withdraw</button>
             <button onclick="openAdminModal()">Admin</button>
         </div>
     </div>
@@ -218,32 +248,32 @@
     <div class="cards-grid">
         <div class="card">
             <div class="card-title">USDT BALANCE</div>
-            <div class="card-value" id="usdtBalance">$1.10</div>
+            <div class="card-value" id="usdtBalance">$0.90</div>
         </div>
         <div class="card">
             <div class="card-title">HOLDINGS</div>
-            <div class="card-value">0.0000</div>
+            <div class="card-value" id="holdingsVal">0.0000</div>
         </div>
         <div class="card">
             <div class="card-title">AVG ENTRY PRICE</div>
-            <div class="card-value">$0.00</div>
+            <div class="card-value" id="avgEntryVal">$79700.50</div>
         </div>
         <div class="card">
             <div class="card-title">ADMIN PROFIT POOL</div>
-            <div class="card-value">$0.00</div>
+            <div class="card-value" id="adminProfitVal">$0.01</div>
         </div>
     </div>
 
     <div class="trading-box">
         <div class="symbol-row">
-            <select class="symbol-select" id="tradingSymbol">
+            <select class="symbol-select" id="tradingSymbol" onchange="updatePrice()">
                 <option value="XRPUSDT">XRPUSDT</option>
-                <option value="BTCUSDT">BTCUSDT</option>
+                <option value="BTCUSDT" selected>BTCUSDT</option>
                 <option value="ETHUSDT">ETHUSDT</option>
             </select>
             <div class="live-badge">● LIVE BITGET</div>
         </div>
-        <div class="market-price" id="marketPrice">$2.45</div>
+        <div class="market-price" id="marketPrice">$79,700.5</div>
 
         <div class="side-buttons">
             <button class="side-btn buy active" id="buyBtn" onclick="setSide('buy')">BUY</button>
@@ -252,10 +282,34 @@
 
         <div class="input-group">
             <label>Order Amount (USDT)</label>
-            <input type="number" id="orderSize" value="1.05" step="0.01">
+            <input type="number" id="orderSize" placeholder="Enter amount...">
         </div>
 
         <button class="execute-btn" onclick="executeOrder()">EXECUTE BITGET ORDER</button>
+    </div>
+
+    <div class="activity-section">
+        <div class="activity-title">Activity History</div>
+        <div class="activity-list" id="activityList">
+            <div class="activity-item">Bitget Live: BUY BTCUSDT worth $0.05 (Fee: $0.00) 7:09:34 PM</div>
+        </div>
+    </div>
+</div>
+
+<!-- Deposit Modal -->
+<div class="modal" id="depositModal">
+    <div class="modal-content">
+        <h3>Deposit USDT</h3>
+        <p>Apna funds is official Bitget address par bhejein:</p>
+        <input type="text" id="depositAddressDisplay" readonly value="0x71C7656EC7a88b098defFB751B7401B5F6d89B5">
+        <div class="input-group">
+            <label>Amount ($):</label>
+            <input type="number" id="depositAmountInput" placeholder="1">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-save" onclick="submitDeposit()">Submit Deposit</button>
+            <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -271,15 +325,24 @@
     </div>
 </div>
 
-<!-- Admin Settings & Keys Modal -->
+<!-- Admin Panel Settings Modal -->
 <div class="modal" id="adminSettingsModal">
     <div class="modal-content">
         <h3>Admin Panel & Bitget API</h3>
+        <div class="input-group"><label>Bitget Deposit Address:</label><input type="text" id="adminDepAddress"></div>
+        <div class="input-group"><label>Min Deposit ($):</label><input type="number" id="adminMinDep"></div>
+        <div class="input-group"><label>Trading Fee (%):</label><input type="number" id="adminFee"></div>
         <div class="input-group"><label>Bitget API Key:</label><input type="text" id="apiKeyInput" placeholder="Enter API Key"></div>
         <div class="input-group"><label>Bitget Secret Key:</label><input type="password" id="secretKeyInput" placeholder="Enter Secret Key"></div>
         <div class="input-group"><label>Bitget Passphrase:</label><input type="password" id="passphraseInput" placeholder="Enter Passphrase"></div>
+        
+        <p style="margin-top: 10px;">Pending Deposits:</p>
+        <div id="pendingDepositsContainer">
+            <div style="font-size:12px; color:#848e9c; margin-bottom:10px;">No pending withdrawals.</div>
+        </div>
+
         <div class="modal-buttons">
-            <button class="btn-save" onclick="saveKeys()">SAVE SETTINGS & KEYS</button>
+            <button class="btn-save" onclick="saveAdminSettings()">SAVE SETTINGS & KEYS</button>
             <button class="btn-cancel" onclick="closeModals()">Cancel</button>
         </div>
     </div>
@@ -287,6 +350,30 @@
 
 <script>
     let currentSide = 'buy';
+    let appState = {
+        usdtBalance: 0.90,
+        holdings: 0.0000,
+        avgEntry: 79700.50,
+        adminProfit: 0.01,
+        depositAddress: "0x71C7656EC7a88b098defFB751B7401B5F6d89B5",
+        minDeposit: 0.01,
+        tradingFee: 5,
+        pendingDeposits: [],
+        activities: ["Bitget Live: BUY BTCUSDT worth $0.05 (Fee: $0.00) 7:09:34 PM"]
+    };
+
+    // Prices mapping
+    const prices = {
+        "BTCUSDT": 79700.5,
+        "XRPUSDT": 2.45,
+        "ETHUSDT": 2650.0
+    };
+
+    function updatePrice() {
+        const symbol = document.getElementById('tradingSymbol').value;
+        const price = prices[symbol] || 1.0;
+        document.getElementById('marketPrice').textContent = '$' + price.toLocaleString();
+    }
 
     function setSide(side) {
         currentSide = side;
@@ -299,32 +386,91 @@
         }
     }
 
+    function openDepositModal() {
+        document.getElementById('depositModal').style.display = 'flex';
+    }
+
     function openAdminModal() {
         document.getElementById('adminAuthModal').style.display = 'flex';
     }
 
     function verifyAdmin() {
-        const pass = document.getElementById('adminPassInput').value;
-        // Default password check or allow any if user stored local
         document.getElementById('adminAuthModal').style.display = 'none';
         document.getElementById('adminSettingsModal').style.display = 'flex';
         
-        // Load saved keys if present in localStorage
+        // Load settings into inputs
+        document.getElementById('adminDepAddress').value = appState.depositAddress;
+        document.getElementById('adminMinDep').value = appState.minDeposit;
+        document.getElementById('adminFee').value = appState.tradingFee;
         document.getElementById('apiKeyInput').value = localStorage.getItem('bg_apiKey') || '';
         document.getElementById('secretKeyInput').value = localStorage.getItem('bg_secretKey') || '';
         document.getElementById('passphraseInput').value = localStorage.getItem('bg_passphrase') || '';
+        renderPendingDeposits();
     }
 
-    function saveKeys() {
+    function saveAdminSettings() {
+        appState.depositAddress = document.getElementById('adminDepAddress').value;
+        appState.minDeposit = parseFloat(document.getElementById('adminMinDep').value);
+        appState.tradingFee = parseFloat(document.getElementById('adminFee').value);
         localStorage.setItem('bg_apiKey', document.getElementById('apiKeyInput').value);
         localStorage.setItem('bg_secretKey', document.getElementById('secretKeyInput').value);
         localStorage.setItem('bg_passphrase', document.getElementById('passphraseInput').value);
+        
         alert('Settings aur Bitget API keys successfully update ho gayi!');
         closeModals();
     }
 
+    function submitDeposit() {
+        const amt = parseFloat(document.getElementById('depositAmountInput').value);
+        if(!amt || amt <= 0) {
+            alert('Darust amount darj karein!');
+            return;
+        }
+        appState.pendingDeposits.push({ id: Date.now(), amount: amt });
+        closeModals();
+        alert('Deposit request submit ho gayi! Admin approval ka wait karein.');
+    }
+
+    function renderPendingDeposits() {
+        const container = document.getElementById('pendingDepositsContainer');
+        if(appState.pendingDeposits.length === 0) {
+            container.innerHTML = '<div style="font-size:12px; color:#848e9c; margin-bottom:10px;">No pending deposits.</div>';
+            return;
+        }
+        container.innerHTML = '';
+        appState.pendingDeposits.forEach((dep, idx) => {
+            container.innerHTML += `
+                <div class="pending-item">
+                    <span>+$${dep.amount} USDT</span>
+                    <button class="btn-approve" onclick="approveDeposit(${idx})">Approve</button>
+                </div>
+            `;
+        });
+    }
+
+    function approveDeposit(idx) {
+        const dep = appState.pendingDeposits.splice(idx, 1)[0];
+        appState.usdtBalance += dep.amount;
+        document.getElementById('usdtBalance').textContent = '$' + appState.usdtBalance.toFixed(2);
+        
+        const actText = `Approved Deposit: +$${dep.amount} USDT  ${new Date().toLocaleTimeString()}`;
+        appState.activities.unshift(actText);
+        updateActivityList();
+        
+        renderPendingDeposits();
+        alert(`Success! Deposit $${dep.amount} approve ho gaya!`);
+    }
+
     function closeModals() {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    }
+
+    function updateActivityList() {
+        const list = document.getElementById('activityList');
+        list.innerHTML = '';
+        appState.activities.forEach(act => {
+            list.innerHTML += `<div class="activity-item">${act}</div>`;
+        });
     }
 
     async function executeOrder() {
@@ -332,11 +478,21 @@
         const secretKey = localStorage.getItem('bg_secretKey');
         const passphrase = localStorage.getItem('bg_passphrase');
         const symbol = document.getElementById('tradingSymbol').value;
-        const size = document.getElementById('orderSize').value;
+        const size = parseFloat(document.getElementById('orderSize').value);
 
         if(!apiKey || !secretKey || !passphrase) {
             alert('Pehle Admin panel mein jaakar apni Bitget API Keys save karein!');
             openAdminModal();
+            return;
+        }
+
+        if(!size || size <= 0) {
+            alert('Baraye karam order amount darj karein!');
+            return;
+        }
+
+        if(size > appState.usdtBalance) {
+            alert('Aapke pas itna USDT balance mojood nahi hai!');
             return;
         }
 
@@ -349,7 +505,26 @@
 
             const result = await response.json();
             if(result.success) {
-                alert('Trade Successfully Executed! Order ID: ' + (result.data?.data?.orderId || 'Success'));
+                // Deduct balance and update holdings
+                appState.usdtBalance -= size;
+                const price = prices[symbol];
+                const addedHoldings = size / price;
+                appState.holdings += addedHoldings;
+                appState.avgEntry = price;
+                const fee = size * (appState.tradingFee / 100);
+                appState.adminProfit += fee;
+
+                // Update UI cards
+                document.getElementById('usdtBalance').textContent = '$' + appState.usdtBalance.toFixed(2);
+                document.getElementById('holdingsVal').textContent = appState.holdings.toFixed(4);
+                document.getElementById('avgEntryVal').textContent = '$' + appState.avgEntry.toLocaleString();
+                document.getElementById('adminProfitVal').textContent = '$' + appState.adminProfit.toFixed(2);
+
+                const actMsg = `Bitget Live: ${currentSide.toUpperCase()} ${symbol} worth $${size.toFixed(2)} (Fee: $${fee.toFixed(2)})`;
+                appState.activities.unshift(actMsg);
+                updateActivityList();
+
+                alert(`Trade Status:\nOrder successfully executed on Bitget! Fee collected: $${fee.toFixed(2)}`);
             } else {
                 alert('Bitget Error: ' + (result.error || 'Unknown error'));
             }
