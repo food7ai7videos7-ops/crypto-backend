@@ -231,27 +231,35 @@
             </div>
             <button class="execute-btn" style="background:var(--accent-green); color:#000; margin-bottom: 15px;" onclick="simulateDeposit()">Add Balance to User</button>
 
-            <button class="execute-btn" style="background:var(--accent-red); color:#fff;" onclick="logoutAdmin()">Lock Admin</button>
+            <div class="form-group">
+                <label class="label">Pending Withdrawals Requests</label>
+                <div id="pendingWithdrawalsList" style="max-height: 150px; overflow-y: auto;">
+                    <div style="color:var(--text-muted); font-size:11px;">No pending withdrawals</div>
+                </div>
+            </div>
+
+            <button class="execute-btn" style="background:var(--accent-red); color:#fff; margin-top:10px;" onclick="logoutAdmin()">Lock Admin</button>
         </div>
     </div>
 
     <script>
         let currentSide = 'buy';
         let livePrice = 0;
-        let historyLogs = JSON.parse(localStorage.getItem('nexus_history') || '[]');
+        let historyLogs = JSON.parse(localStorage.getItem('nexus_history_v2') || '[]');
+        let pendingWithdrawals = JSON.parse(localStorage.getItem('nexus_pending_withdrawals') || '[]');
 
         let state = {
-            balance: parseFloat(localStorage.getItem('nexus_balance') || '0.00'),
-            holdingsSize: parseFloat(localStorage.getItem('nexus_holdings') || '0'),
-            entryPrice: parseFloat(localStorage.getItem('nexus_entry') || '0'),
+            balance: parseFloat(localStorage.getItem('nexus_balance_v2') || '0.00'),
+            holdingsSize: parseFloat(localStorage.getItem('nexus_holdings_v2') || '0'),
+            entryPrice: parseFloat(localStorage.getItem('nexus_entry_v2') || '0'),
             activeSymbol: 'XRPUSDT'
         };
 
         let adminSettings = {
-            profit: parseFloat(localStorage.getItem('nexus_profit') || '0'),
-            fee: parseFloat(localStorage.getItem('nexus_fee') || '0.5'),
-            minDeposit: parseFloat(localStorage.getItem('nexus_mindep') || '10'),
-            wallet: localStorage.getItem('nexus_admin_wallet') || ''
+            profit: parseFloat(localStorage.getItem('nexus_profit_v2') || '0'),
+            fee: parseFloat(localStorage.getItem('nexus_fee_v2') || '0.5'),
+            minDeposit: parseFloat(localStorage.getItem('nexus_mindep_v2') || '10'),
+            wallet: localStorage.getItem('nexus_admin_wallet_v2') || ''
         };
 
         window.onload = () => {
@@ -350,16 +358,32 @@
         }
 
         function submitWithdraw() {
-            const addr = document.getElementById('withdrawAddress').value;
+            const addr = document.getElementById('withdrawAddress').value.trim();
             const amt = parseFloat(document.getElementById('withdrawAmount').value);
-            if (!addr || !amt || amt <= 0) { alert('Enter valid details'); return; }
-            if (amt > state.balance) { alert('Insufficient balance'); return; }
+            
+            if (!addr || !amt || amt <= 0) { 
+                alert('⚠️ Please enter a valid TRC20 address and withdrawal amount.'); 
+                return; 
+            }
+            
+            // Check if user is trying to withdraw more than available balance
+            if (amt > state.balance) {
+                alert(`❌ Insufficient Balance!\n\nYou requested: $${amt}\nYour Available Balance: $${state.balance.toFixed(4)}\n\nYou cannot withdraw more than your current account balance.`);
+                return;
+            }
+
+            // Deduct balance temporarily and push to admin pending withdrawals
             state.balance -= amt;
             saveState();
             updateUI();
-            addHistory(`Withdrawal: -$${amt} to ${addr.slice(0,6)}...`);
-            updateActivity(`Withdrawal requested for ${amt} USDT`);
-            alert('Withdrawal request submitted successfully!');
+
+            pendingWithdrawals.push({ address: addr, amount: amt, time: new Date().toLocaleTimeString() });
+            localStorage.setItem('nexus_pending_withdrawals', JSON.stringify(pendingWithdrawals));
+
+            addHistory(`Withdrawal Request: -$${amt} to ${addr.slice(0,6)}...`);
+            updateActivity(`Withdrawal request submitted for ${amt} USDT`);
+            
+            alert('✅ Withdrawal Request Submitted Successfully!\nYour request has been sent to the admin.');
             document.getElementById('withdrawAddress').value = '';
             document.getElementById('withdrawAmount').value = '';
             closeModal();
@@ -374,9 +398,35 @@
                 document.getElementById('minDepositInput').value = adminSettings.minDeposit;
                 document.getElementById('adminWalletAddr').value = adminSettings.wallet;
                 document.getElementById('adminProfitDisplay').innerText = `$${adminSettings.profit.toFixed(4)}`;
+                renderPendingWithdrawals();
             } else {
                 alert('Incorrect Admin Password!');
             }
+        }
+
+        function renderPendingWithdrawals() {
+            const list = document.getElementById('pendingWithdrawalsList');
+            if (pendingWithdrawals.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No pending withdrawals</div>';
+                return;
+            }
+            list.innerHTML = '';
+            pendingWithdrawals.forEach((item, index) => {
+                list.innerHTML += `<div class="pending-item">
+                    <div>
+                        <strong style="color:var(--accent-cyan);">$${item.amount}</strong><br>
+                        <span style="font-size:9px; color:var(--text-muted);">${item.address.slice(0,10)}...</span>
+                    </div>
+                    <button onclick="approveWithdrawal(${index})" style="background:var(--accent-green); color:#000; border:none; padding:4px 8px; border-radius:6px; font-weight:700; cursor:pointer;">Done</button>
+                </div>`;
+            });
+        }
+
+        function approveWithdrawal(index) {
+            pendingWithdrawals.splice(index, 1);
+            localStorage.setItem('nexus_pending_withdrawals', JSON.stringify(pendingWithdrawals));
+            renderPendingWithdrawals();
+            alert('Withdrawal marked as completed!');
         }
 
         function saveAdminSettings() {
@@ -384,9 +434,9 @@
             adminSettings.minDeposit = parseFloat(document.getElementById('minDepositInput').value) || 10;
             adminSettings.wallet = document.getElementById('adminWalletAddr').value;
             
-            localStorage.setItem('nexus_fee', adminSettings.fee);
-            localStorage.setItem('nexus_mindep', adminSettings.minDeposit);
-            localStorage.setItem('nexus_admin_wallet', adminSettings.wallet);
+            localStorage.setItem('nexus_fee_v2', adminSettings.fee);
+            localStorage.setItem('nexus_mindep_v2', adminSettings.minDeposit);
+            localStorage.setItem('nexus_admin_wallet_v2', adminSettings.wallet);
             
             applyAdminSettingsToUI();
             alert('Admin settings saved successfully!');
@@ -410,7 +460,7 @@
             if (wAmt > adminSettings.profit) { alert('Insufficient accumulated profit'); return; }
             
             adminSettings.profit -= wAmt;
-            localStorage.setItem('nexus_profit', adminSettings.profit);
+            localStorage.setItem('nexus_profit_v2', adminSettings.profit);
             document.getElementById('adminProfitDisplay').innerText = `$${adminSettings.profit.toFixed(4)}`;
             document.getElementById('adminWithdrawAmt').value = '';
             alert(`Successfully withdrawn $${wAmt} to admin wallet: ${wAddr}`);
@@ -446,7 +496,7 @@
                 state.holdingsSize = Math.max(0, state.holdingsSize - (size / livePrice));
             }
             adminSettings.profit += feeAmount;
-            localStorage.setItem('nexus_profit', adminSettings.profit);
+            localStorage.setItem('nexus_profit_v2', adminSettings.profit);
             
             saveState();
             addHistory(`Trade: ${currentSide.toUpperCase()} ${size} USDT on ${state.activeSymbol}`);
@@ -457,9 +507,9 @@
         }
 
         function saveState() {
-            localStorage.setItem('nexus_balance', state.balance);
-            localStorage.setItem('nexus_holdings', state.holdingsSize);
-            localStorage.setItem('nexus_entry', state.entryPrice);
+            localStorage.setItem('nexus_balance_v2', state.balance);
+            localStorage.setItem('nexus_holdings_v2', state.holdingsSize);
+            localStorage.setItem('nexus_entry_v2', state.entryPrice);
         }
 
         function updateUI() {
@@ -469,7 +519,7 @@
         function addHistory(text) {
             historyLogs.unshift({ text: text, time: new Date().toLocaleTimeString() });
             if (historyLogs.length > 20) historyLogs.pop();
-            localStorage.setItem('nexus_history', JSON.stringify(historyLogs));
+            localStorage.setItem('nexus_history_v2', JSON.stringify(historyLogs));
             renderHistory();
         }
 
