@@ -16,7 +16,7 @@ function createBitgetSignature(method, requestPath, body, secretKey) {
     return { timestamp, sign };
 }
 
-// Smart Hybrid Trade API (Real Bitget with Automatic Fallback for Low Balance)
+// 100% Pure Real Bitget Trade Route (Direct Exchange Execution)
 app.post('/api/trade', async (req, res) => {
     try {
         const { apiKey, secretKey, passphrase, symbol, side, size } = req.body;
@@ -25,22 +25,7 @@ app.post('/api/trade', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing required trading parameters' });
         }
 
-        // Agar size kam hai (maslan < 5 USDT), toh direct successful simulation run hogi taake 400 error na aaye
         const numericSize = parseFloat(size);
-        if (numericSize < 5) {
-            return res.json({ 
-                success: true, 
-                data: { 
-                    orderId: 'BG_HYBRID_' + Date.now(), 
-                    symbol: symbol, 
-                    side: side, 
-                    status: 'executed',
-                    note: 'Executed via smart bypass mode'
-                } 
-            });
-        }
-
-        // Real Bitget API Request for normal/large amounts
         const method = 'POST';
         const requestPath = '/api/v2/spot/trade/place-order';
         const host = 'https://api.bitget.com';
@@ -52,6 +37,7 @@ app.post('/api/trade', async (req, res) => {
             force: 'gtc'
         };
 
+        // Bitget V2 rule: BUY ke liye 'amount' (USDT value) aur SELL ke liye 'size' (coin quantity)
         if (side.toLowerCase() === 'buy') {
             body.amount = numericSize.toFixed(2).toString();
         } else {
@@ -70,22 +56,20 @@ app.post('/api/trade', async (req, res) => {
             }
         });
 
+        // Agar Bitget se successfully order lag gaya
         res.json({ success: true, data: response.data });
     } catch (error) {
-        console.error('Bitget API Error, switching to backup execution:', error.response?.data || error.message);
-        
-        // Agar real API par koi bhi 400 ya doosra error aaye, tab bhi user ka kaam nahi rukna chahiye
-        res.json({ 
-            success: true, 
-            data: { 
-                orderId: 'BG_FALLBACK_' + Date.now(), 
-                status: 'executed' 
-            } 
+        // Agar exchange par balance kam hai ya koi aur restriction hai, toh real error front-end par show hoga
+        const errorMsg = error.response?.data?.message || error.message;
+        console.error('Real Bitget Exchange Error:', errorMsg);
+        res.status(400).json({ 
+            success: false, 
+            error: `Bitget Live Error: ${errorMsg}` 
         });
     }
 });
 
-// Withdrawal API Route
+// Real Withdrawal Route
 app.post('/api/withdraw', async (req, res) => {
     try {
         const { apiKey, secretKey, passphrase, address, amount } = req.body;
@@ -120,14 +104,8 @@ app.post('/api/withdraw', async (req, res) => {
 
         res.json({ success: true, data: response.data });
     } catch (error) {
-        console.error('Bitget Withdrawal Error:', error.response?.data || error.message);
-        res.json({ 
-            success: true, 
-            data: { 
-                withdrawId: 'WD_FALLBACK_' + Date.now(), 
-                status: 'success' 
-            } 
-        });
+        const errorMsg = error.response?.data?.message || error.message;
+        res.status(400).json({ success: false, error: `Bitget Withdrawal Error: ${errorMsg}` });
     }
 });
 
