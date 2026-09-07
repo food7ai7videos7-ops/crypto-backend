@@ -3,142 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitget Automated Trading Panel</title>
+    <title>Pro Exchanger - Bitget Trading Panel</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
+        }
+        body {
             background-color: #121212;
             color: #ffffff;
-            margin: 0;
-            padding: 20px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
         }
         .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 480px;
         }
-        h2 {
-            text-align: center;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
             color: #f0b90b;
         }
-        .form-group {
+        .nav-buttons button {
+            background: #2a2e39;
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
             margin-bottom: 15px;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
+        .card {
+            background: #1e222d;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .card-title {
+            font-size: 12px;
+            color: #848e9c;
+            margin-bottom: 8px;
+        }
+        .card-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .trading-box {
+            background: #1e222d;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .symbol-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .symbol-select {
+            background: #2a2e39;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .live-badge {
+            font-size: 12px;
+            color: #0ecb81;
+            font-weight: bold;
+        }
+        .market-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0ecb81;
+            margin-bottom: 20px;
+        }
+        .side-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .side-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
             font-size: 14px;
         }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background: #2b2b2b;
-            color: #fff;
-            box-sizing: border-box;
+        .side-btn.buy {
+            background: #0ecb81;
+            color: #000;
         }
-        button {
+        .side-btn.sell {
+            background: #2a2e39;
+            color: #848e9c;
+        }
+        .side-btn.buy.active {
+            background: #0ecb81;
+            color: #000;
+        }
+        .side-btn.sell.active {
+            background: #f6465d;
+            color: #fff;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #848e9c;
+            margin-bottom: 5px;
+        }
+        .input-group input {
             width: 100%;
+            background: #2a2e39;
+            border: 1px solid #363c4e;
+            color: #fff;
             padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .execute-btn {
+            width: 100%;
             background: #f0b90b;
+            color: #000;
             border: none;
-            border-radius: 4px;
-            color: #121212;
+            padding: 14px;
+            border-radius: 6px;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #1e222d;
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-content h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #f0b90b;
+        }
+        .modal-content input {
+            width: 100%;
+            background: #2a2e39;
+            border: 1px solid #363c4e;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
             margin-top: 10px;
         }
-        button:hover {
-            background: #d4a305;
-        }
-        #status {
-            margin-top: 15px;
-            text-align: center;
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
             font-weight: bold;
+            cursor: pointer;
         }
+        .btn-save { background: #f0b90b; color: #000; }
+        .btn-cancel { background: #2a2e39; color: #fff; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Bitget Trading Panel</h2>
-    <form id="tradeForm">
-        <div class="form-group">
-            <label>API Key</label>
-            <input type="text" id="apiKey" required placeholder="Enter Bitget API Key">
+    <div class="header">
+        <div class="logo">PRO EXCHANGER</div>
+        <div class="nav-buttons">
+            <button onclick="alert('Feature coming soon')">Deposit</button>
+            <button onclick="alert('Feature coming soon')">Withdraw</button>
+            <button onclick="openAdminModal()">Admin</button>
         </div>
-        <div class="form-group">
-            <label>Secret Key</label>
-            <input type="password" id="secretKey" required placeholder="Enter Bitget Secret Key">
+    </div>
+
+    <div class="cards-grid">
+        <div class="card">
+            <div class="card-title">USDT BALANCE</div>
+            <div class="card-value" id="usdtBalance">$1.10</div>
         </div>
-        <div class="form-group">
-            <label>Passphrase</label>
-            <input type="password" id="passphrase" required placeholder="Enter API Passphrase">
+        <div class="card">
+            <div class="card-title">HOLDINGS</div>
+            <div class="card-value">0.0000</div>
         </div>
-        <div class="form-group">
-            <label>Symbol</label>
-            <input type="text" id="symbol" value="BTCUSDT" required>
+        <div class="card">
+            <div class="card-title">AVG ENTRY PRICE</div>
+            <div class="card-value">$0.00</div>
         </div>
-        <div class="form-group">
-            <label>Side</label>
-            <select id="side">
-                <option value="buy">BUY / LONG</option>
-                <option value="sell">SELL / SHORT</option>
+        <div class="card">
+            <div class="card-title">ADMIN PROFIT POOL</div>
+            <div class="card-value">$0.00</div>
+        </div>
+    </div>
+
+    <div class="trading-box">
+        <div class="symbol-row">
+            <select class="symbol-select" id="tradingSymbol">
+                <option value="XRPUSDT">XRPUSDT</option>
+                <option value="BTCUSDT">BTCUSDT</option>
+                <option value="ETHUSDT">ETHUSDT</option>
             </select>
+            <div class="live-badge">● LIVE BITGET</div>
         </div>
-        <div class="form-group">
-            <label>Size (Quantity / USDT)</label>
-            <input type="text" id="size" placeholder="e.g. 0.001 or min 1 USDT value" required>
+        <div class="market-price" id="marketPrice">$2.45</div>
+
+        <div class="side-buttons">
+            <button class="side-btn buy active" id="buyBtn" onclick="setSide('buy')">BUY</button>
+            <button class="side-btn sell" id="sellBtn" onclick="setSide('sell')">SELL</button>
         </div>
-        <button type="submit">Execute Market Order</button>
-    </form>
-    <div id="status"></div>
+
+        <div class="input-group">
+            <label>Order Amount (USDT)</label>
+            <input type="number" id="orderSize" value="1.05" step="0.01">
+        </div>
+
+        <button class="execute-btn" onclick="executeOrder()">EXECUTE BITGET ORDER</button>
+    </div>
+</div>
+
+<!-- Admin Authentication Modal -->
+<div class="modal" id="adminAuthModal">
+    <div class="modal-content">
+        <h3>Admin Authentication</h3>
+        <input type="password" id="adminPassInput" placeholder="Enter Admin Password">
+        <div class="modal-buttons">
+            <button class="btn-save" onclick="verifyAdmin()">Verify</button>
+            <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Settings & Keys Modal -->
+<div class="modal" id="adminSettingsModal">
+    <div class="modal-content">
+        <h3>Admin Panel & Bitget API</h3>
+        <div class="input-group"><label>Bitget API Key:</label><input type="text" id="apiKeyInput" placeholder="Enter API Key"></div>
+        <div class="input-group"><label>Bitget Secret Key:</label><input type="password" id="secretKeyInput" placeholder="Enter Secret Key"></div>
+        <div class="input-group"><label>Bitget Passphrase:</label><input type="password" id="passphraseInput" placeholder="Enter Passphrase"></div>
+        <div class="modal-buttons">
+            <button class="btn-save" onclick="saveKeys()">SAVE SETTINGS & KEYS</button>
+            <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    document.getElementById('tradeForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const statusDiv = document.getElementById('status');
-        statusDiv.style.color = '#f0b90b';
-        statusDiv.innerText = 'Executing order...';
+    let currentSide = 'buy';
 
-        const payload = {
-            apiKey: document.getElementById('apiKey').value.trim(),
-            secretKey: document.getElementById('secretKey').value.trim(),
-            passphrase: document.getElementById('passphrase').value.trim(),
-            symbol: document.getElementById('symbol').value.trim(),
-            side: document.getElementById('side').value,
-            size: document.getElementById('size').value.trim()
-        };
+    function setSide(side) {
+        currentSide = side;
+        if(side === 'buy') {
+            document.getElementById('buyBtn').classList.add('active');
+            document.getElementById('sellBtn').classList.remove('active');
+        } else {
+            document.getElementById('sellBtn').classList.add('active');
+            document.getElementById('buyBtn').classList.remove('active');
+        }
+    }
+
+    function openAdminModal() {
+        document.getElementById('adminAuthModal').style.display = 'flex';
+    }
+
+    function verifyAdmin() {
+        const pass = document.getElementById('adminPassInput').value;
+        // Default password check or allow any if user stored local
+        document.getElementById('adminAuthModal').style.display = 'none';
+        document.getElementById('adminSettingsModal').style.display = 'flex';
+        
+        // Load saved keys if present in localStorage
+        document.getElementById('apiKeyInput').value = localStorage.getItem('bg_apiKey') || '';
+        document.getElementById('secretKeyInput').value = localStorage.getItem('bg_secretKey') || '';
+        document.getElementById('passphraseInput').value = localStorage.getItem('bg_passphrase') || '';
+    }
+
+    function saveKeys() {
+        localStorage.setItem('bg_apiKey', document.getElementById('apiKeyInput').value);
+        localStorage.setItem('bg_secretKey', document.getElementById('secretKeyInput').value);
+        localStorage.setItem('bg_passphrase', document.getElementById('passphraseInput').value);
+        alert('Settings aur Bitget API keys successfully update ho gayi!');
+        closeModals();
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    }
+
+    async function executeOrder() {
+        const apiKey = localStorage.getItem('bg_apiKey');
+        const secretKey = localStorage.getItem('bg_secretKey');
+        const passphrase = localStorage.getItem('bg_passphrase');
+        const symbol = document.getElementById('tradingSymbol').value;
+        const size = document.getElementById('orderSize').value;
+
+        if(!apiKey || !secretKey || !passphrase) {
+            alert('Pehle Admin panel mein jaakar apni Bitget API Keys save karein!');
+            openAdminModal();
+            return;
+        }
 
         try {
             const response = await fetch('/api/trade', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ apiKey, secretKey, passphrase, symbol, side: currentSide, size })
             });
 
             const result = await response.json();
-
-            if (result.success) {
-                statusDiv.style.color = '#0ecb81';
-                statusDiv.innerText = 'Trade Executed Successfully!';
+            if(result.success) {
+                alert('Trade Successfully Executed! Order ID: ' + (result.data?.data?.orderId || 'Success'));
             } else {
-                statusDiv.style.color = '#f6465d';
-                statusDiv.innerText = 'Error: ' + (result.error || 'Unknown error');
+                alert('Bitget Error: ' + (result.error || 'Unknown error'));
             }
-        } catch (err) {
-            statusDiv.style.color = '#f6465d';
-            statusDiv.innerText = 'Network Error: ' + err.message;
+        } catch(err) {
+            alert('Connection Error: ' + err.message);
         }
-    });
+    }
 </script>
-
 </body>
 </html>
