@@ -251,7 +251,6 @@
             </div>
         </header>
 
-        <!-- Balance Card -->
         <div class="card">
             <div class="balance-row">
                 <div>
@@ -269,7 +268,6 @@
             </div>
         </div>
 
-        <!-- Trading Terminal Card -->
         <div class="card">
             <div class="form-group">
                 <label>Trading Pair (Live Bitget)</label>
@@ -298,7 +296,6 @@
             <button class="execute-btn" onclick="executeOrder()">EXECUTE BITGET ORDER</button>
         </div>
 
-        <!-- Activity Stream -->
         <div class="card" style="margin-bottom: 0;">
             <div class="label" style="margin-bottom: 8px;">Activity Stream</div>
             <div class="activity-stream" id="activityList">
@@ -307,7 +304,6 @@
         </div>
     </div>
 
-    <!-- Deposit Modal -->
     <div id="depositModal" class="modal">
         <div class="modal-content">
             <h3>Deposit USDT</h3>
@@ -320,7 +316,6 @@
         </div>
     </div>
 
-    <!-- User Withdrawal Modal -->
     <div id="userWithdrawModal" class="modal">
         <div class="modal-content">
             <h3>Withdraw USDT (TRC20)</h3>
@@ -337,7 +332,6 @@
         </div>
     </div>
 
-    <!-- Admin Auth Modal -->
     <div id="adminAuthModal" class="modal">
         <div class="modal-content">
             <h3>Admin Authentication</h3>
@@ -350,7 +344,6 @@
         </div>
     </div>
 
-    <!-- Admin Settings Modal -->
     <div id="adminSettingsModal" class="modal">
         <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
             <h3>Admin Control Panel</h3>
@@ -433,27 +426,8 @@
             document.getElementById('tradingSymbol').value = appState.selectedSymbol || 'XRPUSDT';
             fetchLivePrices();
             setInterval(fetchLivePrices, 3000);
-            fetchServerData();
-            setInterval(fetchServerData, 4000);
             updateUI();
         };
-
-        async function fetchServerData() {
-            try {
-                const response = await fetch('/api/data');
-                const result = await response.json();
-                if (result.success) {
-                    appState.pendingDeposits = result.pendingDeposits;
-                    appState.adminProfit = result.adminProfit;
-                    saveState();
-                    updateUI();
-                    if (document.getElementById('adminSettingsModal').style.display === 'flex') {
-                        renderPendingDeposits();
-                        document.getElementById('adminProfitDisplay').value = '$ ' + appState.adminProfit.toFixed(4);
-                    }
-                }
-            } catch(e) {}
-        }
 
         async function fetchLivePrices() {
             try {
@@ -629,29 +603,16 @@
             }
         }
 
-        async function submitDeposit() {
+        function submitDeposit() {
             const amt = parseFloat(document.getElementById('depositAmountInput').value);
             if (!amt || amt <= 0) {
                 alert('Enter valid deposit amount!');
                 return;
             }
-            try {
-                const response = await fetch('/api/deposit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: amt })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    closeModals();
-                    alert('Deposit request submitted! Awaiting admin approval.');
-                    fetchServerData();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch(e) {
-                alert('Connection error');
-            }
+            appState.pendingDeposits.push({ id: Date.now(), amount: amt });
+            saveState();
+            closeModals();
+            alert('Deposit request submitted! Awaiting admin approval.');
         }
 
         function renderPendingDeposits() {
@@ -671,26 +632,14 @@
             });
         }
 
-        async function approveDeposit(idx) {
-            const depAmount = appState.pendingDeposits[idx].amount;
-            try {
-                const response = await fetch('/api/approve-deposit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ index: idx })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    appState.usdtBalance += depAmount;
-                    appState.activities.unshift(`[Deposit Approved] +$${depAmount} USDT`);
-                    saveState();
-                    updateUI();
-                    fetchServerData();
-                    alert(`Deposit $${depAmount} approved!`);
-                }
-            } catch(e) {
-                alert('Error approving deposit');
-            }
+        function approveDeposit(idx) {
+            const dep = appState.pendingDeposits.splice(idx, 1)[0];
+            appState.usdtBalance += dep.amount;
+            appState.activities.unshift(`[Deposit Approved] +$${dep.amount} USDT`);
+            saveState();
+            updateUI();
+            renderPendingDeposits();
+            alert(`Deposit $${dep.amount} approved!`);
         }
 
         function updateUI() {
@@ -732,13 +681,13 @@
                     alert('Insufficient USDT balance!');
                     return;
                 }
-                finalSize = sizeInput; 
+                finalSize = sizeInput; // Buy takes USDT amount
             } else {
                 if (sizeInput > appState.holdings) {
                     alert('You do not have enough coin holdings to sell this quantity!');
                     return;
                 }
-                finalSize = sizeInput; 
+                finalSize = sizeInput; // Sell takes exact coin quantity
             }
 
             try {
