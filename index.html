@@ -82,7 +82,7 @@
             <div class="balance-row">
                 <div>
                     <div class="label">USDT Balance</div>
-                    <div class="value" id="usdtBalance">$100.0000</div>
+                    <div class="value" id="usdtBalance">$0.0000</div>
                 </div>
                 <div style="text-align: right;">
                     <div class="label">Holdings Value</div>
@@ -207,8 +207,8 @@
             </div>
             
             <div class="form-group">
-                <label class="label">Add New Coin/Pair (e.g., BTCUSDT)</label>
-                <input type="text" id="newCoinInput" class="form-control" placeholder="BTCUSDT">
+                <label class="label">Add New Coin/Pair (e.g., HANAUSDT)</label>
+                <input type="text" id="newCoinInput" class="form-control" placeholder="HANAUSDT">
             </div>
             <button class="execute-btn" style="margin-bottom: 12px; background: var(--accent-cyan); color: #000;" onclick="addNewCoin()">Add Coin Pair</button>
 
@@ -245,6 +245,7 @@
         let currentSide = 'buy';
         let livePrice = 0;
         let pendingDeposits = [];
+        let globalCoins = ["XRPUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"];
         let historyLogs = JSON.parse(localStorage.getItem('nexus_history') || '[]');
 
         let userId = localStorage.getItem('nexus_user_id');
@@ -254,7 +255,7 @@
         }
 
         let state = {
-            balance: 100.00,
+            balance: 0.00,
             holdingsSize: 0,
             entryPrice: 0,
             activeSymbol: 'XRPUSDT'
@@ -264,33 +265,16 @@
             profit: parseFloat(localStorage.getItem('nexus_profit') || '0'),
             fee: parseFloat(localStorage.getItem('nexus_fee') || '0.5'),
             minDeposit: parseFloat(localStorage.getItem('nexus_mindep') || '10'),
-            wallet: localStorage.getItem('nexus_admin_wallet') || '',
-            customCoins: JSON.parse(localStorage.getItem('nexus_coins') || '["XRPUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"]')
+            wallet: localStorage.getItem('nexus_admin_wallet') || ''
         };
 
         window.onload = () => {
-            initCoinsDropdown();
             fetchData();
-            setInterval(fetchData, 4000);
+            setInterval(fetchData, 3000);
             fetchLivePrice();
             setInterval(fetchLivePrice, 3000);
             applyAdminSettingsToUI();
         };
-
-        function initCoinsDropdown() {
-            const select = document.getElementById('tradingPair');
-            select.innerHTML = '';
-            adminSettings.customCoins.forEach(coin => {
-                let formatted = coin.replace('USDT', '/USDT');
-                select.innerHTML += `<option value="${coin}">${formatted}</option>`;
-            });
-            select.value = state.activeSymbol;
-        }
-
-        function changePair() {
-            state.activeSymbol = document.getElementById('tradingPair').value;
-            fetchLivePrice();
-        }
 
         async function fetchData() {
             try {
@@ -299,10 +283,36 @@
                 if (result.success) {
                     pendingDeposits = result.pendingDeposits || [];
                     state.balance = result.balance;
+                    
+                    if (result.coins && Array.isArray(result.coins)) {
+                        globalCoins = result.coins;
+                    }
+                    updateCoinsDropdown();
                     renderPendingDeposits();
                     updateUI();
                 }
             } catch (error) {}
+        }
+
+        function updateCoinsDropdown() {
+            const select = document.getElementById('tradingPair');
+            let currentSelected = select.value || state.activeSymbol;
+            select.innerHTML = '';
+            globalCoins.forEach(coin => {
+                let formatted = coin.replace('USDT', '/USDT');
+                select.innerHTML += `<option value="${coin}">${formatted}</option>`;
+            });
+            if (globalCoins.includes(currentSelected)) {
+                select.value = currentSelected;
+            } else {
+                state.activeSymbol = globalCoins[0];
+                select.value = state.activeSymbol;
+            }
+        }
+
+        function changePair() {
+            state.activeSymbol = document.getElementById('tradingPair').value;
+            fetchLivePrice();
         }
 
         async function fetchLivePrice() {
@@ -334,7 +344,6 @@
                     pnlDisplay.innerHTML = `<span style="color:var(--accent-red);">-$${Math.abs(pnl).toFixed(4)} (${pnlPercent.toFixed(2)}%)</span>`;
                 }
 
-                // Check SL / TP Auto triggers
                 let tp = parseFloat(document.getElementById('tpPrice').value);
                 let sl = parseFloat(document.getElementById('slPrice').value);
                 if (tp && livePrice >= tp) {
@@ -427,18 +436,26 @@
             }
         }
 
-        function addNewCoin() {
+        async function addNewCoin() {
             const coin = document.getElementById('newCoinInput').value.trim().toUpperCase();
             if (!coin) { alert('Enter valid coin pair'); return; }
-            if (!adminSettings.customCoins.includes(coin)) {
-                adminSettings.customCoins.push(coin);
-                localStorage.setItem('nexus_coins', JSON.stringify(adminSettings.customCoins));
-                initCoinsDropdown();
-                document.getElementById('newCoinInput').value = '';
-                alert(`Coin ${coin} added successfully!`);
-            } else {
-                alert('Coin already exists!');
-            }
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/add-coin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coin })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    globalCoins = result.coins;
+                    updateCoinsDropdown();
+                    document.getElementById('newCoinInput').value = '';
+                    alert(`Coin ${coin} added globally for all users!`);
+                } else {
+                    alert(result.error || 'Failed to add coin');
+                }
+            } catch (e) { alert('Server connection error'); }
         }
 
         function saveAdminSettings() {
