@@ -191,8 +191,7 @@ app.post('/api/trade', async (req, res) => {
                 side: side.toLowerCase(),
                 orderType: 'market',
                 force: 'normal',
-                size: coinSize,
-                delegateAmount: coinSize
+                size: coinSize
             };
 
             const { timestamp, signature } = signBitget(method, requestPath, orderBody, adminConfig.bitgetSecret);
