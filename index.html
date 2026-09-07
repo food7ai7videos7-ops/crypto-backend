@@ -3,320 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Bitget Exchange App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Bitget Automated Trading Panel</title>
     <style>
-        body { background-color: #0b0e11; color: #eaecef; font-family: sans-serif; }
-        .glass-card { background: #181a20; border: 1px solid #2b313a; }
-        .modal-bg { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        h2 {
+            text-align: center;
+            color: #f0b90b;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #2b2b2b;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #f0b90b;
+            border: none;
+            border-radius: 4px;
+            color: #121212;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #d4a305;
+        }
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
-<body class="min-h-screen pb-24">
+<body>
 
-    <header class="flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-[#181a20]">
-        <span class="text-sm font-extrabold text-yellow-500 tracking-wider">PRO EXCHANGER</span>
-        <div class="flex items-center space-x-2">
-            <button onclick="openModal('depositModal')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-1.5 px-3 rounded-lg text-xs">Deposit</button>
-            <button onclick="openModal('withdrawModal')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg text-xs">Withdraw</button>
-            <button onclick="openModal('adminAuthModal')" class="bg-gray-800 text-gray-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs">⚙️ Admin</button>
+<div class="container">
+    <h2>Bitget Trading Panel</h2>
+    <form id="tradeForm">
+        <div class="form-group">
+            <label>API Key</label>
+            <input type="text" id="apiKey" required placeholder="Enter Bitget API Key">
         </div>
-    </header>
-
-    <div class="grid grid-cols-2 gap-3 p-4">
-        <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-[11px] text-gray-400">USDT BALANCE</p>
-            <p id="usdtBalance" class="text-xl font-bold text-yellow-400 mt-0.5">$0.00</p>
+        <div class="form-group">
+            <label>Secret Key</label>
+            <input type="password" id="secretKey" required placeholder="Enter Bitget Secret Key">
         </div>
-        <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-[11px] text-gray-400">HOLDINGS</p>
-            <p id="coinHoldings" class="text-lg font-bold text-gray-100 mt-0.5">0.0000</p>
+        <div class="form-group">
+            <label>Passphrase</label>
+            <input type="password" id="passphrase" required placeholder="Enter API Passphrase">
         </div>
-        <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-[11px] text-gray-400">AVG ENTRY PRICE</p>
-            <p id="avgEntry" class="text-base font-semibold text-gray-200 mt-0.5">$0.00</p>
+        <div class="form-group">
+            <label>Symbol</label>
+            <input type="text" id="symbol" value="BTCUSDT" required>
         </div>
-        <div class="glass-card p-3.5 rounded-xl">
-            <p class="text-[11px] text-gray-400">ADMIN PROFIT POOL</p>
-            <p id="adminFeeDisplay" class="text-base font-semibold text-green-400 mt-0.5">$0.00</p>
-        </div>
-    </div>
-
-    <div class="glass-card p-4 rounded-xl mx-4 mb-4">
-        <div class="flex justify-between items-center mb-3">
-            <select id="coinSelector" onchange="changeActiveCoin()" class="bg-[#0b0e11] text-white text-sm font-bold p-1.5 rounded-lg border border-gray-700 focus:outline-none">
+        <div class="form-group">
+            <label>Side</label>
+            <select id="side">
+                <option value="buy">BUY / LONG</option>
+                <option value="sell">SELL / SHORT</option>
             </select>
-            <span class="text-xs text-green-400 font-semibold flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1.5"></span> LIVE BITGET</span>
         </div>
-        <p class="text-[11px] text-gray-400 mb-0.5">MARKET PRICE</p>
-        <h2 id="activeCoinPrice" class="text-3xl font-extrabold text-green-400">$0.00</h2>
-    </div>
-
-    <div class="glass-card p-4 rounded-xl mx-4 mb-4">
-        <div class="flex bg-[#0b0e11] p-1 rounded-lg border border-gray-800 mb-3">
-            <button id="buyTabBtn" onclick="setOrderType('BUY')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white">BUY</button>
-            <button id="sellTabBtn" onclick="setOrderType('SELL')" class="w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400">SELL</button>
+        <div class="form-group">
+            <label>Size (Quantity / USDT)</label>
+            <input type="text" id="size" placeholder="e.g. 0.001 or min 1 USDT value" required>
         </div>
-        <label class="block text-xs text-gray-400 mb-1">Order Amount (USDT)</label>
-        <input type="number" id="orderAmount" placeholder="Enter amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-3 focus:outline-none">
-        <button id="executeOrderBtn" onclick="executeTrade()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm transition">EXECUTE BITGET ORDER</button>
-    </div>
+        <button type="submit">Execute Market Order</button>
+    </form>
+    <div id="status"></div>
+</div>
 
-    <div class="glass-card p-4 rounded-xl mx-4 mb-6">
-        <h3 class="text-sm font-bold text-gray-300 mb-3">Activity History</h3>
-        <div id="historyContainer" class="space-y-2 max-h-40 overflow-y-auto text-xs text-gray-400">
-            <p>No activity recorded yet.</p>
-        </div>
-    </div>
+<script>
+    document.getElementById('tradeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.color = '#f0b90b';
+        statusDiv.innerText = 'Executing order...';
 
-    <div id="depositModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-2 text-yellow-400">Deposit USDT</h3>
-            <p class="text-xs text-gray-400 mb-1">Apna funds is official Bitget address par bhejein:</p>
-            <div id="displayDepositAddress" class="bg-[#0b0e11] p-2.5 rounded-lg border border-gray-700 text-xs text-yellow-300 font-mono break-all mb-3">Loading...</div>
-            <label class="block text-xs text-gray-400 mb-1">Amount ($):</label>
-            <input type="number" id="depositAmount" placeholder="Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
-            <div class="flex space-x-2">
-                <button onclick="executeDeposit()" class="w-full bg-yellow-500 text-black font-bold py-2.5 rounded-lg text-sm">Submit Deposit</button>
-                <button onclick="closeModal('depositModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
-            </div>
-        </div>
-    </div>
+        const payload = {
+            apiKey: document.getElementById('apiKey').value.trim(),
+            secretKey: document.getElementById('secretKey').value.trim(),
+            passphrase: document.getElementById('passphrase').value.trim(),
+            symbol: document.getElementById('symbol').value.trim(),
+            side: document.getElementById('side').value,
+            size: document.getElementById('size').value.trim()
+        };
 
-    <div id="withdrawModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-3 text-red-400">Withdraw USDT</h3>
-            <label class="block text-xs text-gray-400 mb-1">Amount ($):</label>
-            <input type="number" id="withdrawAmount" placeholder="Amount..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-3 focus:outline-none">
-            <label class="block text-xs text-gray-400 mb-1">Destination Address:</label>
-            <input type="text" id="withdrawAddress" placeholder="Wallet address..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
-            <div class="flex space-x-2">
-                <button onclick="executeWithdraw()" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-lg text-sm">Request Withdraw</button>
-                <button onclick="closeModal('withdrawModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="adminAuthModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-5 rounded-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-3 text-blue-400">Admin Authentication</h3>
-            <input type="password" id="adminPasswordInput" placeholder="Enter admin password..." class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2.5 text-white text-sm mb-4 focus:outline-none">
-            <div class="flex space-x-2">
-                <button onclick="loginAdmin()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Verify</button>
-                <button onclick="closeModal('adminAuthModal')" class="w-full bg-gray-800 text-gray-300 py-2.5 rounded-lg text-sm">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="adminDashboardModal" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-5 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-400">Admin Panel & Bitget API</h3>
-                <button onclick="closeModal('adminDashboardModal')" class="text-gray-400 hover:text-white text-lg">✕</button>
-            </div>
-
-            <label class="block text-xs text-gray-400 mb-1">Bitget Deposit Address:</label>
-            <input type="text" id="adminAddressInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2">
-            
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <div>
-                    <label class="block text-[10px] text-gray-400 mb-1">Min Deposit ($):</label>
-                    <input type="number" id="adminMinDepositInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-gray-400 mb-1">Trading Fee (%):</label>
-                    <input type="number" id="adminFeeInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs">
-                </div>
-            </div>
-
-            <label class="block text-[10px] text-yellow-400 mb-1">Bitget API Key:</label>
-            <input type="text" id="adminApiKeyInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2" placeholder="API Key">
-            
-            <label class="block text-[10px] text-yellow-400 mb-1">Bitget Secret Key:</label>
-            <input type="password" id="adminSecretInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-2" placeholder="Secret Key">
-            
-            <label class="block text-[10px] text-yellow-400 mb-1">Bitget Passphrase:</label>
-            <input type="password" id="adminPassphraseInput" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white text-xs mb-3" placeholder="Passphrase">
-
-            <button onclick="saveAdminSettings()" class="w-full bg-yellow-500 text-black font-bold py-2 rounded-lg text-xs mb-4">SAVE SETTINGS & KEYS</button>
-
-            <h4 class="text-xs font-bold text-yellow-400 mb-2">Pending Deposits</h4>
-            <div id="adminPendingDeposits" class="space-y-2 mb-4 text-xs"><p class="text-gray-500">No pending deposits.</p></div>
-
-            <h4 class="text-xs font-bold text-red-400 mb-2">Pending Withdrawals</h4>
-            <div id="adminPendingWithdrawals" class="space-y-2 mb-4 text-xs"><p class="text-gray-500">No pending withdrawals.</p></div>
-
-            <h4 class="text-xs font-bold text-blue-400 mb-2">Add New Coin</h4>
-            <div class="space-y-2 text-xs">
-                <input type="text" id="newCoinSymbol" placeholder="Symbol (e.g. SOLUSDT)" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white">
-                <input type="number" id="newCoinPrice" placeholder="Price (e.g. 185.40)" class="w-full bg-[#0b0e11] border border-gray-700 rounded-lg p-2 text-white">
-                <button onclick="addNewCoin()" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg">Add Coin</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="customPopup" class="fixed inset-0 modal-bg hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-6 rounded-2xl w-full max-w-xs text-center border border-gray-700 shadow-2xl">
-            <h3 id="popupTitle" class="text-base font-bold text-white mb-1">Notification</h3>
-            <p id="popupMessage" class="text-xs text-gray-300 mb-4">Done.</p>
-            <button onclick="closeModal('customPopup')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs">OK</button>
-        </div>
-    </div>
-
-    <script>
-        let state = { orderType: 'BUY', activeCoin: '', activePrice: 0, coins: [] };
-
-        window.onload = async function() { await fetchUserData(); };
-
-        async function fetchUserData() {
-            const res = await fetch('/api/user/account');
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById('usdtBalance').innerText = `$${data.account.balance.toFixed(2)}`;
-                document.getElementById('coinHoldings').innerText = `${data.account.holdings.toFixed(4)}`;
-                document.getElementById('avgEntry').innerText = `$${data.account.avgEntry.toFixed(2)}`;
-                document.getElementById('adminFeeDisplay').innerText = `$${data.account.accumulatedFee.toFixed(2)}`;
-                document.getElementById('displayDepositAddress').innerText = data.depositAddress;
-                
-                const historyContainer = document.getElementById('historyContainer');
-                if(data.account.tradeHistory.length > 0) {
-                    historyContainer.innerHTML = data.account.tradeHistory.map(item => `
-                        <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded border border-gray-800">
-                            <span>${item.details}</span><span class="text-[10px] text-gray-500">${item.time}</span>
-                        </div>
-                    `).join('');
-                }
-            }
-            const configRes = await fetch('/api/admin/config');
-            const configData = await configRes.json();
-            if(configData.success) {
-                state.coins = configData.coins;
-                const selector = document.getElementById('coinSelector');
-                selector.innerHTML = state.coins.map(c => `<option value="${c.symbol}" price="${c.price}">${c.symbol}</option>`).join('');
-                changeActiveCoin();
-            }
-        }
-
-        function changeActiveCoin() {
-            const select = document.getElementById('coinSelector');
-            const opt = select.options[select.selectedIndex];
-            state.activeCoin = select.value;
-            state.activePrice = parseFloat(opt.getAttribute('price'));
-            document.getElementById('activeCoinPrice').innerText = `$${state.activePrice.toLocaleString()}`;
-        }
-
-        function setOrderType(type) {
-            state.orderType = type;
-            const buyBtn = document.getElementById('buyTabBtn'), sellBtn = document.getElementById('sellTabBtn'), exec = document.getElementById('executeOrderBtn');
-            if(type === 'BUY') {
-                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-green-600 text-white";
-                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
-                exec.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm";
-                exec.innerText = "EXECUTE BITGET BUY ORDER";
-            } else {
-                sellBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-red-600 text-white";
-                buyBtn.className = "w-1/2 py-2 text-xs font-bold rounded-md bg-gray-800 text-gray-400";
-                exec.className = "w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg text-sm";
-                exec.innerText = "EXECUTE BITGET SELL ORDER";
-            }
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('flex'); document.getElementById(id).classList.add('hidden'); }
-        function showPopup(title, msg) { document.getElementById('popupTitle').innerText = title; document.getElementById('popupMessage').innerText = msg; openModal('customPopup'); }
-
-        async function executeDeposit() {
-            const amount = parseFloat(document.getElementById('depositAmount').value);
-            const res = await fetch('/api/deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ amount }) });
-            const data = await res.json();
-            closeModal('depositModal'); showPopup('Deposit Request', data.message);
-        }
-
-        async function executeWithdraw() {
-            const amount = parseFloat(document.getElementById('withdrawAmount').value);
-            const address = document.getElementById('withdrawAddress').value;
-            const res = await fetch('/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ amount, address }) });
-            const data = await res.json();
-            closeModal('withdrawModal'); showPopup('Withdrawal', data.message); fetchUserData();
-        }
-
-        async function loginAdmin() {
-            const password = document.getElementById('adminPasswordInput').value;
-            const res = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ password }) });
-            const data = await res.json();
-            if(data.success) {
-                closeModal('adminAuthModal');
-                document.getElementById('adminAddressInput').value = data.adminConfig.depositAddress;
-                document.getElementById('adminMinDepositInput').value = data.adminConfig.minDeposit;
-                document.getElementById('adminFeeInput').value = data.adminConfig.tradingFeePercent;
-                document.getElementById('adminApiKeyInput').value = data.adminConfig.bitgetApiKey || '';
-                document.getElementById('adminSecretInput').value = data.adminConfig.bitgetSecret || '';
-                document.getElementById('adminPassphraseInput').value = data.adminConfig.bitgetPassphrase || '';
-                
-                document.getElementById('adminPendingDeposits').innerHTML = data.pendingDeposits.length ? data.pendingDeposits.map(d => `
-                    <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded">
-                        <span>+$${d.amount} USDT</span><button onclick="approveDep('${d.id}')" class="bg-green-600 px-2 py-1 rounded text-white font-bold">Approve</button>
-                    </div>
-                `).join('') : '<p class="text-gray-500">No pending deposits.</p>';
-
-                document.getElementById('adminPendingWithdrawals').innerHTML = data.pendingWithdrawals.length ? data.pendingWithdrawals.map(w => `
-                    <div class="flex justify-between items-center bg-[#0b0e11] p-2 rounded">
-                        <span>-$${w.amount} USDT</span>
-                        <div>
-                            <button onclick="actionWit('${w.id}', 'approve')" class="bg-green-600 px-2 py-1 rounded text-white font-bold mr-1">Approve</button>
-                            <button onclick="actionWit('${w.id}', 'reject')" class="bg-red-600 px-2 py-1 rounded text-white font-bold">Reject</button>
-                        </div>
-                    </div>
-                `).join('') : '<p class="text-gray-500">No pending withdrawals.</p>';
-
-                openModal('adminDashboardModal');
-            } else { showPopup('Access Denied', data.message); }
-        }
-
-        async function approveDep(id) {
-            const res = await fetch('/api/admin/approve-deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
-            const data = await res.json();
-            showPopup('Success', data.message); closeModal('adminDashboardModal'); fetchUserData();
-        }
-
-        async function actionWit(id, action) {
-            const res = await fetch('/api/admin/approve-withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id, action }) });
-            const data = await res.json();
-            showPopup('Success', data.message); closeModal('adminDashboardModal'); fetchUserData();
-        }
-
-        async function saveAdminSettings() {
-            const depositAddress = document.getElementById('adminAddressInput').value;
-            const minDeposit = document.getElementById('adminMinDepositInput').value;
-            const tradingFeePercent = document.getElementById('adminFeeInput').value;
-            const bitgetApiKey = document.getElementById('adminApiKeyInput').value;
-            const bitgetSecret = document.getElementById('adminSecretInput').value;
-            const bitgetPassphrase = document.getElementById('adminPassphraseInput').value;
-
-            const res = await fetch('/api/admin/update-settings', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ depositAddress, minDeposit, tradingFeePercent, bitgetApiKey, bitgetSecret, bitgetPassphrase }) 
+        try {
+            const response = await fetch('/api/trade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-            const data = await res.json();
-            showPopup('Settings', data.message);
-            fetchUserData();
-        }
 
-        async function addNewCoin() {
-            const symbol = document.getElementById('newCoinSymbol').value;
-            const price = document.getElementById('newCoinPrice').value;
-            const res = await fetch('/api/admin/add-coin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ symbol, price }) });
-            const data = await res.json();
-            showPopup('Coin Added', data.message); fetchUserData();
-        }
+            const result = await response.json();
 
-        async function executeTrade() {
-            const amount = parseFloat(document.getElementById('orderAmount').value);
-            const res = await fetch('/api/trade', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ symbol: state.activeCoin, side: state.orderType, amount, price: state.activePrice }) });
-            const data = await res.json();
-            showPopup('Trade Status', data.message);
-            if(data.success) { fetchUserData(); document.getElementById('orderAmount').value = ''; }
+            if (result.success) {
+                statusDiv.style.color = '#0ecb81';
+                statusDiv.innerText = 'Trade Executed Successfully!';
+            } else {
+                statusDiv.style.color = '#f6465d';
+                statusDiv.innerText = 'Error: ' + (result.error || 'Unknown error');
+            }
+        } catch (err) {
+            statusDiv.style.color = '#f6465d';
+            statusDiv.innerText = 'Network Error: ' + err.message;
         }
-    </script>
+    });
+</script>
+
 </body>
 </html>
