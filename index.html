@@ -3,53 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Exchanger</title>
+    <title>Pro Exchanger | Professional Trading Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        body { background-color: #121212; color: #ffffff; padding: 15px; display: flex; justify-content: center; }
+        :root {
+            --bg-main: #0b0e11;
+            --bg-card: #151a21;
+            --bg-input: #1e2329;
+            --border-color: #2b313a;
+            --text-main: #eaecef;
+            --text-muted: #848e9c;
+            --accent-yellow: #f0b90b;
+            --accent-green: #0ecb81;
+            --accent-red: #f6465d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 480px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo { font-size: 18px; font-weight: bold; color: #f0b90b; }
-        .nav-buttons button { background: #2a2e39; border: none; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-left: 5px; font-size: 12px; }
-        .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .card { background: #1e222d; padding: 15px; border-radius: 10px; }
-        .card-title { font-size: 12px; color: #848e9c; margin-bottom: 8px; }
-        .card-value { font-size: 18px; font-weight: bold; }
-        .trading-box { background: #1e222d; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+
+        /* Header Styling */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .logo-box { display: flex; align-items: center; gap: 8px; }
+        .logo-icon { width: 10px; height: 10px; background: var(--accent-yellow); border-radius: 50%; box-shadow: 0 0 10px var(--accent-yellow); }
+        .logo { font-size: 16px; font-weight: 700; letter-spacing: 1px; color: #fff; }
+        .nav-buttons { display: flex; gap: 6px; }
+        .nav-buttons button { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; }
+        .nav-buttons button:hover { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+
+        /* Dashboard Cards */
+        .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent-yellow); opacity: 0.7; }
+        .card:nth-child(2)::before { background: #3861fb; }
+        .card:nth-child(3)::before { background: var(--accent-green); }
+        .card-title { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-value { font-size: 16px; font-weight: 700; color: #fff; }
+
+        /* Trading Panel Box */
+        .trading-box { background: var(--bg-card); border: 1px solid var(--border-color); padding: 18px; border-radius: 12px; margin-bottom: 15px; }
         .symbol-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .symbol-select { background: #2a2e39; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; }
-        .live-badge { font-size: 12px; color: #0ecb81; font-weight: bold; }
-        .market-price { font-size: 24px; font-weight: bold; color: #0ecb81; margin-bottom: 20px; }
-        .side-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
-        .side-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; background: #2a2e39; color: #848e9c; }
-        .side-btn.buy.active { background: #0ecb81; color: #000; }
-        .side-btn.sell.active { background: #f6465d; color: #fff; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 12px; color: #848e9c; margin-bottom: 5px; }
-        .input-group input { width: 100%; background: #2a2e39; border: 1px solid #363c4e; color: #fff; padding: 12px; border-radius: 6px; font-size: 14px; }
-        .execute-btn { width: 100%; background: #f0b90b; color: #000; border: none; padding: 14px; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .activity-section { background: #1e222d; padding: 15px; border-radius: 10px; }
-        .activity-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #848e9c; }
-        .activity-list { font-size: 12px; color: #b7bdc6; max-height: 120px; overflow-y: auto; }
-        .activity-item { padding: 6px 0; border-bottom: 1px solid #2a2e39; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #1e222d; padding: 20px; border-radius: 10px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
-        .modal-content h3 { margin-bottom: 12px; font-size: 16px; color: #f0b90b; }
-        .modal-content p { font-size: 13px; color: #848e9c; margin-bottom: 8px; }
-        .modal-content input { width: 100%; background: #2a2e39; border: 1px solid #363c4e; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
-        .modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-save { background: #f0b90b; color: #000; }
-        .btn-cancel { background: #2a2e39; color: #fff; }
-        .btn-approve { background: #0ecb81; color: #000; padding: 6px 12px; font-size: 12px; border-radius: 4px; border:none; cursor:pointer;}
-        .pending-item { display: flex; justify-content: space-between; align-items: center; background: #2a2e39; padding: 8px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+        .symbol-select { background: var(--bg-input); color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; outline: none; cursor: pointer; }
+        .symbol-select:focus { border-color: var(--accent-yellow); }
+        .live-badge { font-size: 11px; background: rgba(14, 203, 129, 0.1); color: var(--accent-green); padding: 4px 8px; border-radius: 4px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .live-dot { width: 6px; height: 6px; background: var(--accent-green); border-radius: 50%; animation: pulse 1.5px infinite; }
+
+        .market-price-container { margin-bottom: 18px; }
+        .market-price-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+        .market-price { font-size: 22px; font-weight: 700; color: var(--accent-green); letter-spacing: 0.5px; }
+
+        /* Buy / Sell Switcher */
+        .side-buttons { display: flex; gap: 8px; margin-bottom: 15px; background: var(--bg-input); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .side-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; background: transparent; color: var(--text-muted); transition: all 0.2s; }
+        .side-btn.buy.active { background: var(--accent-green); color: #000; box-shadow: 0 2px 8px rgba(14, 203, 129, 0.3); }
+        .side-btn.sell.active { background: var(--accent-red); color: #fff; box-shadow: 0 2px 8px rgba(246, 70, 93, 0.3); }
+
+        /* Inputs */
+        .input-group { margin-bottom: 14px; }
+        .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group input { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+        .input-group input:focus { border-color: var(--accent-yellow); }
+        .input-group input[readonly] { opacity: 0.7; cursor: not-allowed; }
+
+        /* Execute Button */
+        .execute-btn { width: 100%; background: var(--accent-yellow); color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity 0.2s, transform 0.1s; box-shadow: 0 4px 12px rgba(240, 185, 11, 0.2); }
+        .execute-btn:hover { opacity: 0.9; }
+        .execute-btn:active { transform: scale(0.98); }
+
+        /* Activity Stream */
+        .activity-section { background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; }
+        .activity-title { font-size: 12px; font-weight: 700; margin-bottom: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .activity-list { font-size: 12px; color: var(--text-muted); max-height: 130px; overflow-y: auto; display: flex; flexDirection: column; gap: 6px; }
+        .activity-item { padding: 8px; background: var(--bg-input); border-radius: 6px; border-left: 3px solid var(--accent-yellow); font-family: monospace; color: var(--text-main); }
+
+        /* Modals Professional Styling */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); justify-content: center; align-items: center; padding: 15px; z-index: 1000; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 14px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-content h3 { margin-bottom: 14px; font-size: 15px; font-weight: 700; color: var(--accent-yellow); display: flex; align-items: center; gap: 8px; }
+        .modal-content p { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+        
+        .modal-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-buttons button { flex: 1; padding: 11px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .btn-save { background: var(--accent-yellow); color: #000; }
+        .btn-cancel { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-approve { background: var(--accent-green); color: #000; padding: 6px 12px; font-size: 11px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; }
+        
+        .pending-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; border: 1px solid var(--border-color); }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="logo">PRO EXCHANGER</div>
+        <div class="logo-box">
+            <div class="logo-icon"></div>
+            <div class="logo">PRO EXCHANGER</div>
+        </div>
         <div class="nav-buttons">
             <button onclick="openDepositModal()">Deposit</button>
             <button onclick="alert('Withdrawals currently unavailable')">Withdraw</button>
@@ -58,40 +113,54 @@
     </div>
 
     <div class="cards-grid">
-        <div class="card"><div class="card-title">USDT BALANCE</div><div class="card-value" id="usdtBalance">$0.90</div></div>
-        <div class="card"><div class="card-title">HOLDINGS</div><div class="card-value" id="holdingsVal">0.0000</div></div>
-        <div class="card"><div class="card-title">AVG ENTRY PRICE</div><div class="card-value" id="avgEntryVal">$79700.50</div></div>
-        <div class="card"><div class="card-title">ADMIN PROFIT POOL</div><div class="card-value" id="adminProfitVal">$0.01</div></div>
+        <div class="card">
+            <div class="card-title">USDT Balance</div>
+            <div class="card-value" id="usdtBalance">$1.90</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Holdings</div>
+            <div class="card-value" id="holdingsVal">0.0000</div>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-title">Avg Entry Price</div>
+            <div class="card-value" id="avgEntryVal">$79,700.5000</div>
+        </div>
     </div>
 
     <div class="trading-box">
         <div class="symbol-row">
-            <select class="symbol-select" id="tradingSymbol" onchange="updatePrice()">
+            <select class="symbol-select" id="tradingSymbol" onchange="updateSymbolSelection()">
                 <option value="XRPUSDT">XRPUSDT</option>
-                <option value="BTCUSDT" selected>BTCUSDT</option>
+                <option value="BTCUSDT">BTCUSDT</option>
                 <option value="ETHUSDT">ETHUSDT</option>
             </select>
-            <div class="live-badge">● LIVE BITGET</div>
+            <div class="live-badge">
+                <div class="live-dot"></div> LIVE BITGET
+            </div>
         </div>
-        <div class="market-price" id="marketPrice">$79,700.5</div>
+        
+        <div class="market-price-container">
+            <div class="market-price-label">Realtime Market Price</div>
+            <div class="market-price" id="marketPrice">$79,700.5000</div>
+        </div>
 
         <div class="side-buttons">
-            <button class="side-btn buy active" id="buyBtn" onclick="setSide('buy')">BUY</button>
-            <button class="side-btn sell" id="sellBtn" onclick="setSide('sell')">SELL</button>
+            <button class="side-btn buy active" id="buyBtn" onclick="setSide('buy')">BUY / LONG</button>
+            <button class="side-btn sell" id="sellBtn" onclick="setSide('sell')">SELL / SHORT</button>
         </div>
 
         <div class="input-group">
             <label>Order Amount (USDT)</label>
-            <input type="number" id="orderSize" placeholder="Enter amount...">
+            <input type="number" id="orderSize" placeholder="0.00">
         </div>
 
         <button class="execute-btn" onclick="executeOrder()">EXECUTE BITGET ORDER</button>
     </div>
 
     <div class="activity-section">
-        <div class="activity-title">Activity History</div>
+        <div class="activity-title">Activity Stream</div>
         <div class="activity-list" id="activityList">
-            <div class="activity-item">Bitget Live: BUY BTCUSDT worth $0.05 (Fee: $0.00)</div>
+            <div class="activity-item">[System] Terminal initialized successfully.</div>
         </div>
     </div>
 </div>
@@ -100,9 +169,15 @@
 <div class="modal" id="depositModal">
     <div class="modal-content">
         <h3>Deposit USDT</h3>
-        <p>Apna funds is official Bitget address par bhejein:</p>
-        <input type="text" id="depositAddressDisplay" readonly value="0x71C7656EC7a88b098defFB751B7401B5F6d89B5">
-        <div class="input-group"><label>Amount ($):</label><input type="number" id="depositAmountInput" placeholder="1"></div>
+        <p>Apna funds is official Bitget deposit address par transfer karein:</p>
+        <div class="input-group">
+            <label>Bitget Wallet Address</label>
+            <input type="text" id="depositAddressDisplay" readonly value="0x71C7656EC7a88b098defFB751B7401B5F6d89B5">
+        </div>
+        <div class="input-group">
+            <label>Deposit Amount ($)</label>
+            <input type="number" id="depositAmountInput" placeholder="Enter amount">
+        </div>
         <div class="modal-buttons">
             <button class="btn-save" onclick="submitDeposit()">Submit Deposit</button>
             <button class="btn-cancel" onclick="closeModals()">Cancel</button>
@@ -114,9 +189,13 @@
 <div class="modal" id="adminAuthModal">
     <div class="modal-content">
         <h3>Admin Authentication</h3>
-        <input type="password" id="adminPassInput" placeholder="Enter Admin Password">
+        <p>Enter secure password to access administrative controls:</p>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="adminPassInput" placeholder="Enter password">
+        </div>
         <div class="modal-buttons">
-            <button class="btn-save" onclick="verifyAdmin()">Verify</button>
+            <button class="btn-save" onclick="verifyAdmin()">Authenticate</button>
             <button class="btn-cancel" onclick="closeModals()">Cancel</button>
         </div>
     </div>
@@ -125,46 +204,73 @@
 <!-- Admin Settings Modal -->
 <div class="modal" id="adminSettingsModal">
     <div class="modal-content">
-        <h3>Admin Panel & Bitget API</h3>
-        <div class="input-group"><label>Bitget Deposit Address:</label><input type="text" id="adminDepAddress"></div>
-        <div class="input-group"><label>Min Deposit ($):</label><input type="number" id="adminMinDep"></div>
-        <div class="input-group"><label>Trading Fee (%):</label><input type="number" id="adminFee"></div>
-        <div class="input-group"><label>Bitget API Key:</label><input type="text" id="apiKeyInput" placeholder="Enter API Key"></div>
-        <div class="input-group"><label>Bitget Secret Key:</label><input type="password" id="secretKeyInput" placeholder="Enter Secret Key"></div>
-        <div class="input-group"><label>Bitget Passphrase:</label><input type="password" id="passphraseInput" placeholder="Enter Passphrase"></div>
-        <p style="margin-top: 10px;">Pending Deposits:</p>
-        <div id="pendingDepositsContainer"><div style="font-size:12px; color:#848e9c; margin-bottom:10px;">No pending deposits.</div></div>
+        <h3>Admin Panel & Profit Control</h3>
+        <div class="input-group"><label>New Admin Password</label><input type="password" id="newAdminPass" placeholder="Leave blank to keep current"></div>
+        <div class="input-group"><label>Bitget Deposit Address</label><input type="text" id="adminDepAddress"></div>
+        <div class="input-group"><label>Min Deposit ($)</label><input type="number" id="adminMinDep"></div>
+        <div class="input-group"><label>Trading Fee (%)</label><input type="number" id="adminFee"></div>
+        <div class="input-group"><label>Bitget API Key</label><input type="text" id="apiKeyInput" placeholder="API Key"></div>
+        <div class="input-group"><label>Bitget Secret Key</label><input type="password" id="secretKeyInput" placeholder="Secret Key"></div>
+        <div class="input-group"><label>Bitget Passphrase</label><input type="password" id="passphraseInput" placeholder="Passphrase"></div>
+        
+        <hr style="border:0; border-top:1px solid var(--border-color); margin:15px 0;">
+        <h3 style="color:var(--accent-green);">Profit Withdrawal</h3>
+        <div class="input-group"><label>Accumulated Profit Pool</label><input type="text" id="adminProfitDisplay" readonly style="color:var(--accent-green); font-weight:700;"></div>
+        <div class="input-group"><label>Withdrawal Crypto Address (USDT)</label><input type="text" id="withdrawAddressInput" placeholder="Enter TRC20/ERC20 Address"></div>
+        <div class="input-group"><label>Amount to Withdraw ($)</label><input type="number" id="withdrawAmountInput" placeholder="Enter amount"></div>
+        <button class="execute-btn" style="background:var(--accent-green); color:#000; margin-bottom:15px;" onclick="withdrawAdminProfit()">WITHDRAW PROFIT TO WALLET</button>
+
+        <p style="margin-top: 5px; font-weight: 600; color: #fff;">Pending User Deposits:</p>
+        <div id="pendingDepositsContainer"><div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">No pending deposits.</div></div>
         <div class="modal-buttons">
-            <button class="btn-save" onclick="saveAdminSettings()">SAVE SETTINGS & KEYS</button>
-            <button class="btn-cancel" onclick="closeModals()">Cancel</button>
+            <button class="btn-save" onclick="saveAdminSettings()">Save Configuration</button>
+            <button class="btn-cancel" onclick="closeModals()">Close</button>
         </div>
     </div>
 </div>
 
 <script>
     let currentSide = 'buy';
-    let appState = {
-        usdtBalance: 0.90,
+    
+    const prices = {
+        "BTCUSDT": 79700.5000,
+        "XRPUSDT": 1.4110,
+        "ETHUSDT": 2650.0000
+    };
+
+    let appState = JSON.parse(localStorage.getItem('pro_exchanger_state')) || {
+        usdtBalance: 1.90,
         holdings: 0.0000,
-        avgEntry: 79700.50,
+        avgEntry: 79700.5000,
         adminProfit: 0.01,
         depositAddress: "0x71C7656EC7a88b098defFB751B7401B5F6d89B5",
         minDeposit: 0.01,
         tradingFee: 5,
+        selectedSymbol: "BTCUSDT",
         pendingDeposits: [],
-        activities: ["Bitget Live: BUY BTCUSDT worth $0.05 (Fee: $0.00)"]
+        activities: ["[System] Terminal initialized successfully."]
     };
 
-    const prices = {
-        "BTCUSDT": 79700.5,
-        "XRPUSDT": 2.45,
-        "ETHUSDT": 2650.0
+    function saveState() {
+        localStorage.setItem('pro_exchanger_state', JSON.stringify(appState));
+    }
+
+    window.onload = function() {
+        document.getElementById('tradingSymbol').value = appState.selectedSymbol || "BTCUSDT";
+        updatePrice();
+        updateUI();
     };
+
+    function updateSymbolSelection() {
+        appState.selectedSymbol = document.getElementById('tradingSymbol').value;
+        saveState();
+        updatePrice();
+    }
 
     function updatePrice() {
-        const symbol = document.getElementById('tradingSymbol').value;
+        const symbol = appState.selectedSymbol || document.getElementById('tradingSymbol').value;
         const price = prices[symbol] || 1.0;
-        document.getElementById('marketPrice').textContent = '$' + price.toLocaleString();
+        document.getElementById('marketPrice').textContent = '$' + price.toFixed(4);
     }
 
     function setSide(side) {
@@ -187,12 +293,21 @@
     }
 
     function verifyAdmin() {
+        const passInput = document.getElementById('adminPassInput').value;
+        const savedPass = localStorage.getItem('adminPassword') || 'admin123';
+
+        if(passInput !== savedPass) {
+            alert('Ghalat Password! Baraye karam durust password darj karein.');
+            return;
+        }
+
         document.getElementById('adminAuthModal').style.display = 'none';
         document.getElementById('adminSettingsModal').style.display = 'flex';
         
         document.getElementById('adminDepAddress').value = appState.depositAddress;
         document.getElementById('adminMinDep').value = appState.minDeposit;
         document.getElementById('adminFee').value = appState.tradingFee;
+        document.getElementById('adminProfitDisplay').value = '$' + (appState.adminProfit || 0).toFixed(4);
         document.getElementById('apiKeyInput').value = localStorage.getItem('bg_apiKey') || '';
         document.getElementById('secretKeyInput').value = localStorage.getItem('bg_secretKey') || '';
         document.getElementById('passphraseInput').value = localStorage.getItem('bg_passphrase') || '';
@@ -200,6 +315,12 @@
     }
 
     function saveAdminSettings() {
+        const newPass = document.getElementById('newAdminPass').value;
+        if(newPass) {
+            localStorage.setItem('adminPassword', newPass);
+            alert('Admin password successfully change ho gaya!');
+        }
+
         appState.depositAddress = document.getElementById('adminDepAddress').value;
         appState.minDeposit = parseFloat(document.getElementById('adminMinDep').value);
         appState.tradingFee = parseFloat(document.getElementById('adminFee').value);
@@ -207,8 +328,54 @@
         localStorage.setItem('bg_secretKey', document.getElementById('secretKeyInput').value);
         localStorage.setItem('bg_passphrase', document.getElementById('passphraseInput').value);
         
+        saveState();
         alert('Settings aur Bitget API keys successfully update ho gayi!');
         closeModals();
+    }
+
+    async function withdrawAdminProfit() {
+        const apiKey = localStorage.getItem('bg_apiKey');
+        const secretKey = localStorage.getItem('bg_secretKey');
+        const passphrase = localStorage.getItem('bg_passphrase');
+        const address = document.getElementById('withdrawAddressInput').value;
+        const amount = parseFloat(document.getElementById('withdrawAmountInput').value);
+
+        if(!apiKey || !secretKey || !passphrase) {
+            alert('Pehle Bitget API keys save karein!');
+            return;
+        }
+
+        if(!address || !amount || amount <= 0) {
+            alert('Baraye karam valid crypto address aur amount darj karein!');
+            return;
+        }
+
+        if(amount > appState.adminProfit) {
+            alert('Aapke profit pool mein itna balance mojood nahi hai!');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apiKey, secretKey, passphrase, address, amount })
+            });
+
+            const result = await response.json();
+            if(result.success) {
+                appState.adminProfit -= amount;
+                document.getElementById('adminProfitDisplay').value = '$' + appState.adminProfit.toFixed(4);
+                appState.activities.unshift(`[Withdrawal] $${amount.toFixed(4)} sent to ${address.substring(0,6)}...`);
+                saveState();
+                updateUI();
+                alert(`Success! Profit $${amount} successfully aapke crypto address par withdraw ho gaya!`);
+            } else {
+                alert('Withdrawal Error: ' + (result.error || 'Unknown error'));
+            }
+        } catch(err) {
+            alert('Connection Error: ' + err.message);
+        }
     }
 
     function submitDeposit() {
@@ -218,14 +385,15 @@
             return;
         }
         appState.pendingDeposits.push({ id: Date.now(), amount: amt });
+        saveState();
         closeModals();
         alert('Deposit request submit ho gayi! Admin approval ka wait karein.');
     }
 
     function renderPendingDeposits() {
         const container = document.getElementById('pendingDepositsContainer');
-        if(appState.pendingDeposits.length === 0) {
-            container.innerHTML = '<div style="font-size:12px; color:#848e9c; margin-bottom:10px;">No pending deposits.</div>';
+        if(!appState.pendingDeposits || appState.pendingDeposits.length === 0) {
+            container.innerHTML = '<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">No pending deposits.</div>';
             return;
         }
         container.innerHTML = '';
@@ -242,12 +410,11 @@
     function approveDeposit(idx) {
         const dep = appState.pendingDeposits.splice(idx, 1)[0];
         appState.usdtBalance += dep.amount;
-        document.getElementById('usdtBalance').textContent = '$' + appState.usdtBalance.toFixed(2);
         
-        const actText = `Approved Deposit: +$${dep.amount} USDT`;
+        const actText = `[Deposit Approved] +$${dep.amount} USDT`;
         appState.activities.unshift(actText);
-        updateActivityList();
-        
+        saveState();
+        updateUI();
         renderPendingDeposits();
         alert(`Success! Deposit $${dep.amount} approve ho gaya!`);
     }
@@ -256,19 +423,25 @@
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     }
 
-    function updateActivityList() {
+    function updateUI() {
+        document.getElementById('usdtBalance').textContent = '$' + appState.usdtBalance.toFixed(4);
+        document.getElementById('holdingsVal').textContent = appState.holdings.toFixed(4);
+        document.getElementById('avgEntryVal').textContent = '$' + appState.avgEntry.toFixed(4);
+        
         const list = document.getElementById('activityList');
         list.innerHTML = '';
-        appState.activities.forEach(act => {
-            list.innerHTML += `<div class="activity-item">${act}</div>`;
-        });
+        if(appState.activities) {
+            appState.activities.forEach(act => {
+                list.innerHTML += `<div class="activity-item">${act}</div>`;
+            });
+        }
     }
 
     async function executeOrder() {
         const apiKey = localStorage.getItem('bg_apiKey');
         const secretKey = localStorage.getItem('bg_secretKey');
         const passphrase = localStorage.getItem('bg_passphrase');
-        const symbol = document.getElementById('tradingSymbol').value;
+        const symbol = appState.selectedSymbol || document.getElementById('tradingSymbol').value;
         const size = parseFloat(document.getElementById('orderSize').value);
 
         if(!apiKey || !secretKey || !passphrase) {
@@ -299,21 +472,21 @@
                 appState.usdtBalance -= size;
                 const price = prices[symbol];
                 const addedHoldings = size / price;
-                appState.holdings += addedHoldings;
+                if(currentSide === 'buy') {
+                    appState.holdings += addedHoldings;
+                } else {
+                    appState.holdings = Math.max(0, appState.holdings - addedHoldings);
+                }
                 appState.avgEntry = price;
                 const fee = size * (appState.tradingFee / 100);
                 appState.adminProfit += fee;
 
-                document.getElementById('usdtBalance').textContent = '$' + appState.usdtBalance.toFixed(2);
-                document.getElementById('holdingsVal').textContent = appState.holdings.toFixed(4);
-                document.getElementById('avgEntryVal').textContent = '$' + appState.avgEntry.toLocaleString();
-                document.getElementById('adminProfitVal').textContent = '$' + appState.adminProfit.toFixed(2);
-
-                const actMsg = `Bitget Live: ${currentSide.toUpperCase()} ${symbol} worth $${size.toFixed(2)} (Fee: $${fee.toFixed(2)})`;
+                const actMsg = `[Trade] ${currentSide.toUpperCase()} ${symbol} $${size.toFixed(4)} (Fee: $${fee.toFixed(4)})`;
                 appState.activities.unshift(actMsg);
-                updateActivityList();
+                saveState();
+                updateUI();
 
-                alert(`Trade Status:\nOrder successfully executed on Bitget! Fee collected: $${fee.toFixed(2)}`);
+                alert(`Trade Status:\nOrder successfully executed on Bitget! Fee collected: $${fee.toFixed(4)}`);
             } else {
                 alert('Bitget Error: ' + (result.error || 'Unknown error'));
             }
