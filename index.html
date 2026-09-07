@@ -434,7 +434,7 @@
             fetchLivePrices();
             setInterval(fetchLivePrices, 3000);
             fetchServerData();
-            setInterval(fetchServerData, 3000); // Live sync polling for admin requests
+            setInterval(fetchServerData, 3000);
             updateUI();
         };
 
@@ -647,10 +647,10 @@
                     alert('Deposit request submitted! Awaiting admin approval.');
                     fetchServerData();
                 } else {
-                    alert('Error: ' + result.error);
+                    alert('Error: ' + (result.error || 'Failed'));
                 }
             } catch(e) {
-                alert('Connection error');
+                alert('Connection error: Please try again.');
             }
         }
 
