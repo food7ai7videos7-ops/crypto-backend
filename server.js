@@ -8,10 +8,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files from root
+// Serve static frontend files
 app.use(express.static(path.join(__dirname)));
 
-// Fallback explicit route for index.html just in case
+// Root fallback route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
