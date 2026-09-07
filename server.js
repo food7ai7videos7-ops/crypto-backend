@@ -2,39 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const crypto = require('crypto');
-const fs = require('fs');
 const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Serve static files from frontend if needed
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Persistent storage file for pending deposits and admin profit
-const DATA_FILE = path.join(__dirname, 'database.json');
-
-function loadDatabase() {
-    try {
-        if (fs.existsSync(DATA_FILE)) {
-            const data = fs.readFileSync(DATA_FILE, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (e) {}
-    return { pendingDeposits: [], adminProfit: 0.01 };
-}
-
-function saveDatabase(data) {
-    try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    } catch (e) {}
-}
+// In-memory storage for Vercel serverless environment
+let serverState = {
+    pendingDeposits: [],
+    adminProfit: 0.01
+};
 
 // Get live data endpoint for sync
 app.get('/api/data', (req, res) => {
-    const db = loadDatabase();
-    res.json({ success: true, pendingDeposits: db.pendingDeposits, adminProfit: db.adminProfit });
+    res.json({ success: true, pendingDeposits: serverState.pendingDeposits, adminProfit: serverState.adminProfit });
 });
 
 // Submit deposit endpoint from any device
@@ -43,20 +27,16 @@ app.post('/api/deposit', (req, res) => {
     if (!amount || amount <= 0) {
         return res.status(400).json({ success: false, error: 'Invalid amount' });
     }
-    const db = loadDatabase();
     const newDep = { id: Date.now(), amount: parseFloat(amount) };
-    db.pendingDeposits.push(newDep);
-    saveDatabase(db);
+    serverState.pendingDeposits.push(newDep);
     res.json({ success: true, message: 'Deposit request submitted successfully' });
 });
 
 // Approve deposit endpoint
 app.post('/api/approve-deposit', (req, res) => {
     const { index } = req.body;
-    const db = loadDatabase();
-    if (db.pendingDeposits && db.pendingDeposits[index]) {
-        db.pendingDeposits.splice(index, 1);
-        saveDatabase(db);
+    if (serverState.pendingDeposits && serverState.pendingDeposits[index]) {
+        serverState.pendingDeposits.splice(index, 1);
         return res.json({ success: true });
     }
     res.status(400).json({ success: false, error: 'Invalid deposit index' });
