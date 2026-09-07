@@ -32,9 +32,16 @@ app.post('/api/trade', async (req, res) => {
             symbol: symbol,
             side: side.toLowerCase(),
             orderType: 'market',
-            force: 'gtc',
-            size: size.toString()
+            force: 'gtc'
         };
+
+        // Buy ke liye amount aur Sell ke liye precise coin quantity (size)
+        if (side.toLowerCase() === 'buy') {
+            body.amount = parseFloat(size).toFixed(2).toString();
+        } else {
+            // Sell ke liye size ko safely format kiya hai taake Bitget error na de
+            body.size = parseFloat(size).toFixed(4).toString();
+        }
 
         const { timestamp, sign } = createBitgetSignature(method, requestPath, body, secretKey);
 
@@ -58,7 +65,7 @@ app.post('/api/trade', async (req, res) => {
     }
 });
 
-// Admin Profit Withdrawal API
+// Admin & User Profit/Wallet Withdrawal API
 app.post('/api/withdraw', async (req, res) => {
     try {
         const { apiKey, secretKey, passphrase, address, amount } = req.body;
@@ -75,7 +82,7 @@ app.post('/api/withdraw', async (req, res) => {
             coin: 'USDT',
             transferType: 'on_chain',
             address: address,
-            amount: amount.toString(),
+            amount: parseFloat(amount).toFixed(2).toString(),
             chain: 'TRC20'
         };
 
