@@ -3,198 +3,596 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX TRADING :: Professional Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <title>NEXUS PRO - Advanced Bitget Trading Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-body: #050811;
-            --bg-card: rgba(13, 19, 33, 0.85);
-            --border-neon: rgba(0, 242, 254, 0.2);
-            --accent-cyan: #00F2FE;
-            --accent-blue: #4FACFE;
-            --accent-green: #10B981;
-            --accent-red: #EF4444;
-            --text-main: #F1F5F9;
-            --text-muted: #64748B;
-            --font-main: 'Plus Jakarta Sans', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --bg-deep: #05070b;
+            --bg-card: #0d131f;
+            --bg-glass: rgba(13, 19, 31, 0.8);
+            --accent-cyan: #00f2fe;
+            --accent-green: #00c853;
+            --accent-red: #ff3366;
+            --accent-gold: #ffd700;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: var(--bg-body); color: var(--text-main);
-            font-family: var(--font-main); min-height: 100vh;
-            display: flex; justify-content: center; align-items: center; padding: 10px;
-        }
-        .terminal-container {
-            width: 100%; max-width: 440px; background: var(--bg-card);
-            border: 1px solid var(--border-neon); border-radius: 24px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9); overflow: hidden;
-        }
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 20px; background: rgba(3, 7, 18, 0.8);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .logo {
-            font-size: 16px; font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .nav-buttons { display: flex; gap: 6px; }
-        .btn-top {
-            background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-main); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
-        }
-        .btn-admin { color: #F59E0B; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
-        .content { padding: 20px; }
-        .wallet-card {
-            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px; padding: 16px; margin-bottom: 16px;
-        }
-        .w-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
-        .w-val { font-size: 26px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 4px; }
-        .trade-box {
-            background: rgba(3, 7, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px; padding: 16px;
-        }
-        .field { margin-bottom: 12px; }
-        label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
-        select, input {
-            width: 100%; padding: 11px 14px; background: #020617;
-            border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-main);
-            border-radius: 10px; font-size: 13px; outline: none;
-        }
-        .market-ticker {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 10px 14px; border-radius: 10px; margin-bottom: 12px;
-        }
-        .ticker-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
-        .ticker-price { font-size: 15px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green); }
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-        .btn-trade { padding: 12px; border: none; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
-        .btn-buy { background: #10B981; color: #FFF; }
-        .btn-sell { background: #EF4444; color: #FFF; }
-        .modal-bg {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.9); justify-content: center; align-items: center; z-index: 100; padding: 16px;
-        }
-        .modal-box {
-            background: #0B132B; border: 1px solid rgba(0, 242, 254, 0.3);
-            border-radius: 20px; width: 100%; max-width: 380px; padding: 20px; position: relative;
-        }
-        .close-btn { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
-        .modal-title { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 14px; }
-        .btn-submit {
-            width: 100%; padding: 11px; border: none; border-radius: 10px;
-            font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; margin-top: 10px;
-            background: var(--accent-cyan); color: #020617;
-        }
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(70px);
-            background: var(--accent-green); color: #020617; padding: 10px 18px; border-radius: 20px;
-            font-weight: 800; font-size: 12px; transition: transform 0.3s ease; z-index: 1000;
-        }
-        .toast.error { background: var(--accent-red); color: #FFF; }
-        .toast.show { transform: translateX(-50%) translateY(0); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-deep); color: var(--text-main); min-height: 100vh; padding: 12px; background-image: radial-gradient(circle at 50% 0%, #111e38 0%, #05070b 70%); }
+        .container { max-width: 480px; margin: 0 auto; padding-bottom: 30px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; background: var(--bg-glass); backdrop-filter: blur(12px); padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .logo { font-weight: 700; font-size: 15px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px; }
+        .header-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+        .header-btns button { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); padding: 5px 8px; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s ease; }
+        .header-btns button:active { transform: scale(0.95); background: var(--accent-cyan); color: #000; }
+
+        .card { background: var(--bg-glass); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .balance-row { display: flex; justify-content: space-between; align-items: center; }
+        .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .value { font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px; }
+        
+        .trading-pair { margin-bottom: 12px; }
+        .trading-pair select { width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 13px; font-weight: 600; outline: none; }
+        
+        .price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; }
+        .price-val { color: var(--accent-green); font-weight: 700; font-size: 17px; text-shadow: 0 0 15px rgba(0,200,83,0.3); }
+        
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 12px; }
+        .action-btn { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff; text-align: center; transition: all 0.2s; }
+        .action-btn.buy { background: rgba(0,200,83,0.2); border: 1px solid var(--accent-green); color: var(--accent-green); opacity: 0.5; }
+        .action-btn.buy.active { opacity: 1; background: var(--accent-green); color: #000; box-shadow: 0 0 20px rgba(0,200,83,0.4); }
+        .action-btn.sell { background: rgba(255,51,102,0.2); border: 1px solid var(--accent-red); color: var(--accent-red); opacity: 0.5; }
+        .action-btn.sell.active { opacity: 1; background: var(--accent-red); color: #fff; box-shadow: 0 0 20px rgba(255,51,102,0.4); }
+
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600; }
+        .form-control { width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+        .form-control:focus { border-color: var(--accent-cyan); }
+
+        .row-inputs { display: flex; gap: 8px; }
+        .row-inputs .form-group { flex: 1; }
+
+        .execute-btn { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent-cyan), #0072ff); border: none; border-radius: 10px; color: #000; font-weight: 700; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 4px 20px rgba(0,242,254,0.3); transition: transform 0.1s; margin-top: 4px; }
+        .execute-btn:active { transform: scale(0.98); }
+
+        .activity-stream { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; max-height: 100px; overflow-y: auto; font-size: 11px; }
+        .activity-item { margin-bottom: 5px; color: var(--text-muted); border-left: 2px solid var(--accent-cyan); padding-left: 6px; font-family: monospace; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 1000; justify-content: center; align-items: center; padding: 15px; overflow-y: auto; }
+        .modal-content { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); width: 100%; max-width: 400px; border-radius: 16px; padding: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-weight: 700; font-size: 14px; }
+        .close-modal { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+        .pending-item, .history-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 11px; border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
-
-    <div class="terminal-container">
+    <div class="container">
         <header>
-            <div class="logo">⚡ APEX PRO</div>
-            <div class="nav-buttons">
-                <button class="btn-top" onclick="openModal('depositModal')">+ Deposit</button>
-                <button class="btn-top" onclick="openModal('withdrawModal')">- Withdraw</button>
-                <button class="btn-top btn-admin" onclick="openModal('adminLoginModal')">⚙️ Admin</button>
+            <div class="logo">⚡ NEXUS PRO</div>
+            <div class="header-btns">
+                <button onclick="openModal('depositModal')">Deposit</button>
+                <button onclick="openModal('withdrawModal')">Withdraw</button>
+                <button onclick="openModal('historyModal')">History</button>
+                <button onclick="openModal('adminModal')">Admin</button>
             </div>
         </header>
 
-        <div class="content">
-            <div class="wallet-card">
-                <div class="w-title">Live Trading Balance</div>
-                <div class="w-val" id="userBalance">$100.00</div>
-            </div>
-
-            <div class="trade-box">
-                <div class="field">
-                    <label>Select Asset / Coin</label>
-                    <select id="tradingPair" onchange="fetchTicker()"></select>
+        <div class="card">
+            <div class="balance-row">
+                <div>
+                    <div class="label">USDT Balance</div>
+                    <div class="value" id="usdtBalance">$100.0000</div>
                 </div>
-
-                <div class="market-ticker">
-                    <span class="ticker-label">Market Price</span>
-                    <span class="ticker-price" id="livePrice">Loading...</span>
-                </div>
-
-                <div class="row-2">
-                    <div class="field">
-                        <label>USDT Amount</label>
-                        <input type="number" id="orderSize" placeholder="0.00" oninput="calculateTokens()">
-                    </div>
-                    <div class="field">
-                        <label>Coin Quantity</label>
-                        <input type="number" id="tokenQuantity" placeholder="0.00" oninput="calculateUSDT()">
-                    </div>
-                </div>
-
-                <div class="action-btns">
-                    <button class="btn-trade btn-buy" onclick="executeOrder('BUY')">🟢 Buy Long</button>
-                    <button class="btn-trade btn-sell" onclick="executeOrder('SELL')">🔴 Sell Short</button>
+                <div style="text-align: right;">
+                    <div class="label">Holdings Value</div>
+                    <div class="value" id="holdingsBalance">$0.0000</div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div id="adminLoginModal" class="modal-bg">
-        <div class="modal-box" style="max-width: 320px;">
-            <button class="close-btn" onclick="closeModal('adminLoginModal')">&times;</button>
-            <div class="modal-title" style="color: #F59E0B;">🔐 Admin Login</div>
-            <div class="field"><label>Password</label><input type="password" id="adminPasswordInput" placeholder="Password..."></div>
-            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="verifyAdminPassword()">Login</button>
-        </div>
-    </div>
-
-    <div id="depositModal" class="modal-bg">
-        <div class="modal-box">
-            <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
-            <div class="modal-title" style="color: var(--accent-cyan);">Instant Deposit</div>
-            <div class="field"><label>Amount (USDT)</label><input type="number" id="depAmount" placeholder="Amount"></div>
-            <button class="btn-submit" onclick="submitDeposit()">Confirm Deposit</button>
-        </div>
-    </div>
-
-    <div id="withdrawModal" class="modal-bg">
-        <div class="modal-box">
-            <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
-            <div class="modal-title" style="color: var(--accent-red);">Instant Withdrawal</div>
-            <div class="field"><label>Amount (USDT)</label><input type="number" id="wdAmount" placeholder="Amount"></div>
-            <div class="field"><label>TRC20 Address</label><input type="text" id="wdAddress" placeholder="Address"></div>
-            <button class="btn-submit" style="background: var(--accent-red); color: #FFF;" onclick="submitWithdraw()">Request Withdrawal</button>
-        </div>
-    </div>
-
-    <div id="adminModal" class="modal-bg">
-        <div class="modal-box" style="max-width: 400px;">
-            <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
-            <div class="modal-title" style="color: #F59E0B;">⚙️ Admin Control Panel</div>
-            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
-                <div style="font-size: 10px; font-weight: 700; color: #F59E0B;">Admin Collected Fee</div>
-                <div id="adminProfitDisplay" style="font-size: 20px; font-weight: 800; font-family: var(--font-mono); color: #FFF;">$0.00 USDT</div>
-                <button class="btn-submit" style="background: #10B981; color: #FFF; margin-top: 8px; font-size: 11px;" onclick="withdrawAdminProfit()">Withdraw Profit</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <span class="label">Live PnL:</span>
+                <span id="livePnlDisplay" style="font-weight: 700; color: var(--text-muted);">$0.0000 (0.00%)</span>
             </div>
-            <div class="field"><label>Fee Percentage (%)</label><input type="number" id="adminFeeInput" step="0.1"></div>
-            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="saveAdminSettings()">Save Settings</button>
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
-            <div class="field"><label>New Coin Symbol</label><input type="text" id="newCoinSymbol" placeholder="e.g. DOGEUSDT"></div>
-            <div class="field"><label>Coin Display Name</label><input type="text" id="newCoinName" placeholder="e.g. DOGE / USDT"></div>
-            <button class="btn-submit" onclick="addNewCoin()">Add New Coin</button>
+        </div>
+
+        <div class="card">
+            <div class="trading-pair">
+                <label class="label">Trading Pair (Live Bitget)</label>
+                <select id="tradingPair" onchange="changePair()">
+                    <option value="XRPUSDT">XRP/USDT</option>
+                </select>
+            </div>
+            <div class="price-row">
+                <span class="label">Live Bitget Price:</span>
+                <span class="price-val" id="livePrice">$0.0000</span>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn buy active" id="buyBtn" onclick="setSide('buy')">BUY</button>
+                <button class="action-btn sell" id="sellBtn" onclick="setSide('sell')">SELL</button>
+            </div>
+            <div class="form-group">
+                <label class="label">Order Size (USDT Amount)</label>
+                <input type="number" id="orderSize" class="form-control" placeholder="Enter USDT amount...">
+            </div>
+            <div class="row-inputs">
+                <div class="form-group">
+                    <label class="label">Take-Profit ($)</label>
+                    <input type="number" id="tpPrice" class="form-control" placeholder="Optional TP">
+                </div>
+                <div class="form-group">
+                    <label class="label">Stop-Loss ($)</label>
+                    <input type="number" id="slPrice" class="form-control" placeholder="Optional SL">
+                </div>
+            </div>
+            <button class="execute-btn" onclick="executeOrder()">Execute Bitget Order</button>
+        </div>
+
+        <div class="card">
+            <div class="label" style="margin-bottom: 8px;">Activity Stream</div>
+            <div class="activity-stream" id="activityStream">
+                <div class="activity-item">[System] Secure Terminal Initialized.</div>
+            </div>
         </div>
     </div>
 
-    <div id="toast" class="toast">Success</div>
-    <script src="script.js"></script>
+    <!-- Deposit Modal -->
+    <div class="modal" id="depositModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Deposit USDT</span>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="label" id="minDepositLabel">Amount (USDT)</label>
+                <input type="number" id="depositAmount" class="form-control" placeholder="Enter deposit amount">
+            </div>
+            <button class="execute-btn" onclick="submitDeposit()">Submit Request</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Withdraw USDT</span>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="label">TRC20 Wallet Address</label>
+                <input type="text" id="withdrawAddress" class="form-control" placeholder="Enter TRC20 address">
+            </div>
+            <div class="form-group">
+                <label class="label">Amount (USDT)</label>
+                <input type="number" id="withdrawAmount" class="form-control" placeholder="Enter amount">
+            </div>
+            <button class="execute-btn" onclick="submitWithdraw()">Submit Withdrawal</button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Transaction & Trade History</span>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="historyList" style="max-height: 300px; overflow-y: auto;">
+                <div style="color:var(--text-muted); font-size:11px;">No logs found yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content" id="adminAuthBox">
+            <div class="modal-header">
+                <span>Admin Login</span>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="label">Admin Password</label>
+                <input type="password" id="adminPassInput" class="form-control" placeholder="Enter password">
+            </div>
+            <button class="execute-btn" onclick="verifyAdmin()">Login Panel</button>
+        </div>
+        
+        <div class="modal-content" id="adminDashboardBox" style="display:none;">
+            <div class="modal-header">
+                <span>Admin Control Panel</span>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="card" style="padding: 10px; margin-bottom: 10px; background: rgba(0,0,0,0.3);">
+                <div class="label" style="color: var(--accent-gold);">Accumulated Profit: <span id="adminProfitDisplay">$0.0000</span></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="label">Add New Coin/Pair (e.g., BTCUSDT)</label>
+                <input type="text" id="newCoinInput" class="form-control" placeholder="BTCUSDT">
+            </div>
+            <button class="execute-btn" style="margin-bottom: 12px; background: var(--accent-cyan); color: #000;" onclick="addNewCoin()">Add Coin Pair</button>
+
+            <div class="form-group">
+                <label class="label">Admin Crypto Address</label>
+                <input type="text" id="adminWalletAddr" class="form-control" placeholder="TRC20 Address">
+            </div>
+            <div class="form-group">
+                <label class="label">Admin Withdraw Amount (USDT)</label>
+                <input type="number" id="adminWithdrawAmt" class="form-control" placeholder="Amount">
+            </div>
+            <button class="execute-btn" style="margin-bottom: 12px; background: var(--accent-gold); color: #000;" onclick="adminWithdrawProfit()">Withdraw Profit</button>
+
+            <div class="form-group">
+                <label class="label">Trading Fee (%)</label>
+                <input type="number" step="0.1" id="tradingFeeInput" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="label">Minimum Deposit Limit (USDT)</label>
+                <input type="number" id="minDepositInput" class="form-control">
+            </div>
+            <button class="execute-btn" style="margin-bottom: 15px;" onclick="saveAdminSettings()">Save Settings</button>
+
+            <div class="form-group">
+                <label class="label">Pending Deposits</label>
+                <div id="pendingDepositsList"></div>
+            </div>
+            <button class="execute-btn" style="background:var(--accent-red); color:#fff; margin-top:10px;" onclick="logoutAdmin()">Lock Admin</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin;
+        let currentSide = 'buy';
+        let livePrice = 0;
+        let pendingDeposits = [];
+        let historyLogs = JSON.parse(localStorage.getItem('nexus_history') || '[]');
+
+        let userId = localStorage.getItem('nexus_user_id');
+        if (!userId) {
+            userId = 'usr_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('nexus_user_id', userId);
+        }
+
+        let state = {
+            balance: 100.00,
+            holdingsSize: 0,
+            entryPrice: 0,
+            activeSymbol: 'XRPUSDT'
+        };
+
+        let adminSettings = {
+            profit: parseFloat(localStorage.getItem('nexus_profit') || '0'),
+            fee: parseFloat(localStorage.getItem('nexus_fee') || '0.5'),
+            minDeposit: parseFloat(localStorage.getItem('nexus_mindep') || '10'),
+            wallet: localStorage.getItem('nexus_admin_wallet') || '',
+            customCoins: JSON.parse(localStorage.getItem('nexus_coins') || '["XRPUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"]')
+        };
+
+        window.onload = () => {
+            initCoinsDropdown();
+            fetchData();
+            setInterval(fetchData, 4000);
+            fetchLivePrice();
+            setInterval(fetchLivePrice, 3000);
+            applyAdminSettingsToUI();
+        };
+
+        function initCoinsDropdown() {
+            const select = document.getElementById('tradingPair');
+            select.innerHTML = '';
+            adminSettings.customCoins.forEach(coin => {
+                let formatted = coin.replace('USDT', '/USDT');
+                select.innerHTML += `<option value="${coin}">${formatted}</option>`;
+            });
+            select.value = state.activeSymbol;
+        }
+
+        function changePair() {
+            state.activeSymbol = document.getElementById('tradingPair').value;
+            fetchLivePrice();
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data?userId=${userId}`);
+                const result = await response.json();
+                if (result.success) {
+                    pendingDeposits = result.pendingDeposits || [];
+                    state.balance = result.balance;
+                    renderPendingDeposits();
+                    updateUI();
+                }
+            } catch (error) {}
+        }
+
+        async function fetchLivePrice() {
+            try {
+                const response = await fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${state.activeSymbol}`);
+                const data = await response.json();
+                if (data && data.data && data.data[0]) {
+                    livePrice = parseFloat(data.data[0].lastPr);
+                    document.getElementById('livePrice').innerText = `$${livePrice.toFixed(4)}`;
+                    calculateLivePnl();
+                }
+            } catch (e) {}
+        }
+
+        function calculateLivePnl() {
+            const pnlDisplay = document.getElementById('livePnlDisplay');
+            const holdingsValDisplay = document.getElementById('holdingsBalance');
+            
+            if (state.holdingsSize > 0 && state.entryPrice > 0) {
+                let currentVal = state.holdingsSize * livePrice;
+                let investedVal = state.holdingsSize * state.entryPrice;
+                let pnl = currentVal - investedVal;
+                let pnlPercent = (pnl / investedVal) * 100;
+
+                holdingsValDisplay.innerText = `$${currentVal.toFixed(4)}`;
+                if (pnl >= 0) {
+                    pnlDisplay.innerHTML = `<span style="color:var(--accent-green);">+$${pnl.toFixed(4)} (+${pnlPercent.toFixed(2)}%)</span>`;
+                } else {
+                    pnlDisplay.innerHTML = `<span style="color:var(--accent-red);">-$${Math.abs(pnl).toFixed(4)} (${pnlPercent.toFixed(2)}%)</span>`;
+                }
+
+                // Check SL / TP Auto triggers
+                let tp = parseFloat(document.getElementById('tpPrice').value);
+                let sl = parseFloat(document.getElementById('slPrice').value);
+                if (tp && livePrice >= tp) {
+                    autoCloseTrade('Take-Profit Hit');
+                } else if (sl && livePrice <= sl) {
+                    autoCloseTrade('Stop-Loss Hit');
+                }
+            } else {
+                holdingsValDisplay.innerText = `$0.0000`;
+                pnlDisplay.innerHTML = `$0.0000 (0.00%)`;
+            }
+        }
+
+        function autoCloseTrade(reason) {
+            let pnl = (state.holdingsSize * livePrice) - (state.holdingsSize * state.entryPrice);
+            state.balance += (state.holdingsSize * livePrice) + pnl;
+            addHistory(`Auto-Closed (${reason}): PnL $${pnl.toFixed(2)}`);
+            updateActivity(`Trade closed automatically: ${reason}`);
+            state.holdingsSize = 0;
+            state.entryPrice = 0;
+            updateUI();
+        }
+
+        function setSide(side) {
+            currentSide = side;
+            if (side === 'buy') {
+                document.getElementById('buyBtn').classList.add('active');
+                document.getElementById('sellBtn').classList.remove('active');
+            } else {
+                document.getElementById('sellBtn').classList.add('active');
+                document.getElementById('buyBtn').classList.remove('active');
+            }
+        }
+
+        function applyAdminSettingsToUI() {
+            document.getElementById('minDepositLabel').innerText = `Amount (USDT) - Min: $${adminSettings.minDeposit}`;
+        }
+
+        async function submitDeposit() {
+            const amountInput = document.getElementById('depositAmount');
+            const amount = parseFloat(amountInput.value);
+            if (!amount || amount < adminSettings.minDeposit) { 
+                alert(`Minimum deposit amount is $${adminSettings.minDeposit}`); 
+                return; 
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amount, userId: userId })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    addHistory(`Deposit Request: +$${amount}`);
+                    alert('Deposit request sent to admin!');
+                    amountInput.value = '';
+                    closeModal();
+                    fetchData();
+                }
+            } catch (e) { alert('Connection error'); }
+        }
+
+        function submitWithdraw() {
+            const addr = document.getElementById('withdrawAddress').value;
+            const amt = parseFloat(document.getElementById('withdrawAmount').value);
+            if (!addr || !amt || amt <= 0) { alert('Enter valid details'); return; }
+            if (amt > state.balance) { alert('Insufficient balance'); return; }
+            state.balance -= amt;
+            updateUI();
+            addHistory(`Withdrawal: -$${amt} to ${addr.slice(0,6)}...`);
+            updateActivity(`Withdrawal requested for ${amt} USDT`);
+            alert('Withdrawal request submitted successfully!');
+            document.getElementById('withdrawAddress').value = '';
+            document.getElementById('withdrawAmount').value = '';
+            closeModal();
+        }
+
+        function verifyAdmin() {
+            const pass = document.getElementById('adminPassInput').value;
+            if (pass === 'Mmooossaa35#') {
+                document.getElementById('adminAuthBox').style.display = 'none';
+                document.getElementById('adminDashboardBox').style.display = 'block';
+                document.getElementById('tradingFeeInput').value = adminSettings.fee;
+                document.getElementById('minDepositInput').value = adminSettings.minDeposit;
+                document.getElementById('adminWalletAddr').value = adminSettings.wallet;
+                document.getElementById('adminProfitDisplay').innerText = `$${adminSettings.profit.toFixed(4)}`;
+                renderPendingDeposits();
+            } else {
+                alert('Incorrect Admin Password!');
+            }
+        }
+
+        function addNewCoin() {
+            const coin = document.getElementById('newCoinInput').value.trim().toUpperCase();
+            if (!coin) { alert('Enter valid coin pair'); return; }
+            if (!adminSettings.customCoins.includes(coin)) {
+                adminSettings.customCoins.push(coin);
+                localStorage.setItem('nexus_coins', JSON.stringify(adminSettings.customCoins));
+                initCoinsDropdown();
+                document.getElementById('newCoinInput').value = '';
+                alert(`Coin ${coin} added successfully!`);
+            } else {
+                alert('Coin already exists!');
+            }
+        }
+
+        function saveAdminSettings() {
+            adminSettings.fee = parseFloat(document.getElementById('tradingFeeInput').value) || 0.5;
+            adminSettings.minDeposit = parseFloat(document.getElementById('minDepositInput').value) || 10;
+            adminSettings.wallet = document.getElementById('adminWalletAddr').value;
+            
+            localStorage.setItem('nexus_fee', adminSettings.fee);
+            localStorage.setItem('nexus_mindep', adminSettings.minDeposit);
+            localStorage.setItem('nexus_admin_wallet', adminSettings.wallet);
+            
+            applyAdminSettingsToUI();
+            alert('Admin settings saved successfully!');
+        }
+
+        function adminWithdrawProfit() {
+            const wAmt = parseFloat(document.getElementById('adminWithdrawAmt').value);
+            const wAddr = document.getElementById('adminWalletAddr').value;
+            if (!wAddr || !wAmt || wAmt <= 0) { alert('Enter valid wallet & amount'); return; }
+            if (wAmt > adminSettings.profit) { alert('Insufficient accumulated profit'); return; }
+            
+            adminSettings.profit -= wAmt;
+            localStorage.setItem('nexus_profit', adminSettings.profit);
+            document.getElementById('adminProfitDisplay').innerText = `$${adminSettings.profit.toFixed(4)}`;
+            document.getElementById('adminWithdrawAmt').value = '';
+            alert(`Successfully withdrawn $${wAmt} to admin wallet: ${wAddr}`);
+        }
+
+        function logoutAdmin() {
+            document.getElementById('adminPassInput').value = '';
+            document.getElementById('adminDashboardBox').style.display = 'none';
+            document.getElementById('adminAuthBox').style.display = 'block';
+            closeModal();
+        }
+
+        async function approveDeposit(index) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/approve-deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    fetchData();
+                    alert('Deposit approved and credited to user!');
+                }
+            } catch (e) { alert('Error approving'); }
+        }
+
+        async function executeOrder() {
+            const sizeInput = document.getElementById('orderSize');
+            const size = parseFloat(sizeInput.value);
+
+            if (!size || size <= 0) { alert('Enter valid size'); return; }
+            
+            const feeAmount = (size * adminSettings.fee) / 100;
+            const totalRequired = size + feeAmount;
+
+            if (currentSide === 'buy' && totalRequired > state.balance) { 
+                alert(`Insufficient USDT balance! (Includes ${adminSettings.fee}% fee: $${feeAmount.toFixed(2)})`); 
+                return; 
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/trade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbol: state.activeSymbol, side: currentSide, size: size })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    if (currentSide === 'buy') {
+                        state.balance -= totalRequired;
+                        state.holdingsSize += size / livePrice;
+                        state.entryPrice = livePrice;
+                    } else {
+                        state.balance += size;
+                        state.holdingsSize = Math.max(0, state.holdingsSize - (size / livePrice));
+                    }
+                    adminSettings.profit += feeAmount;
+                    localStorage.setItem('nexus_profit', adminSettings.profit);
+                    
+                    addHistory(`Trade: ${currentSide.toUpperCase()} ${size} USDT on ${state.activeSymbol}`);
+                    updateActivity(`Executed ${currentSide.toUpperCase()} ${size} USDT (Fee: $${feeAmount.toFixed(2)})`);
+                    alert('Trade Executed Successfully on Bitget!');
+                    sizeInput.value = '';
+                    updateUI();
+                } else {
+                    alert('Failed: ' + (result.error || 'Unknown'));
+                }
+            } catch (e) { alert('Execution connection error'); }
+        }
+
+        function updateUI() {
+            document.getElementById('usdtBalance').innerText = `$${state.balance.toFixed(4)}`;
+        }
+
+        function addHistory(text) {
+            historyLogs.unshift({ text: text, time: new Date().toLocaleTimeString() });
+            if (historyLogs.length > 20) historyLogs.pop();
+            localStorage.setItem('nexus_history', JSON.stringify(historyLogs));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (historyLogs.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No logs found yet.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            historyLogs.forEach(log => {
+                list.innerHTML += `<div class="history-item">
+                    <span>${log.text}</span>
+                    <span style="color:var(--text-muted);">${log.time}</span>
+                </div>`;
+            });
+        }
+
+        function updateActivity(text) {
+            const stream = document.getElementById('activityStream');
+            stream.innerHTML = `<div class="activity-item">[${new Date().toLocaleTimeString()}] ${text}</div>` + stream.innerHTML;
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+            if (id === 'adminModal') {
+                document.getElementById('adminAuthBox').style.display = 'block';
+                document.getElementById('adminDashboardBox').style.display = 'none';
+            }
+            if (id === 'historyModal') {
+                renderHistory();
+            }
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        }
+
+        function renderPendingDeposits() {
+            const list = document.getElementById('pendingDepositsList');
+            if (pendingDeposits.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No pending deposits</div>';
+                return;
+            }
+            list.innerHTML = '';
+            pendingDeposits.forEach((dep, idx) => {
+                list.innerHTML += `<div class="pending-item">
+                    <span>${dep.userId.slice(0,6)}... : <strong>+$${dep.amount}</strong></span>
+                    <button onclick="approveDeposit(${idx})" style="background:var(--accent-green); color:#000; border:none; padding:4px 8px; border-radius:6px; font-weight:700; cursor:pointer;">Approve</button>
+                </div>`;
+            });
+        }
+    </script>
 </body>
 </html>
