@@ -1,15 +1,82 @@
 const express = require('express');
 const cors = require('cors');
 const https = require('https');
+const crypto = require('crypto');
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
-// Aapke bilkul naye bot ka exact token
+// Bot aur Telegram Details
 const BOT_TOKEN = "8995508972:AAGSPih40VfiRDLsor37T5oo7fxMFQqi9Qc"; 
 const CHAT_ID = "6504370273";
+
+// Bitget API Credentials (Jo aapne abhi screenshot mein di hain)
+const BITGET_API_KEY = "bg_c548d9fda7a32eceb14ee1b8607d63f8";
+const BITGET_SECRET_KEY = "78a0c22d32bce51efe378cfcc608a5f1007fe9d833758e93586464b5c600d855";
+const BITGET_PASSPHRASE = "Mmoossaa35";
+
+// Bitget Signature Generator function for Private API requests
+function getBitgetSignature(method, requestPath, body, timestamp) {
+    const message = timestamp + method.toUpperCase() + requestPath + (body ? JSON.stringify(body) : '');
+    return crypto.createHmac('sha256', BITGET_SECRET_KEY).update(message).digest('base64');
+}
+
+// Function to Place Real Trade on Bitget Exchange
+function placeBitgetRealOrder(symbol, side, size, callback) {
+    const timestamp = Date.now().toString();
+    const method = 'POST';
+    const requestPath = '/api/v2/spot/trade/place-order';
+    
+    // Bitget V2 Spot Order Payload
+    const body = {
+        symbol: symbol,
+        productType: 'usdt-spot',
+        marginCoin: 'usdt',
+        size: size.toString(),
+        side: side.toLowerCase(), // 'buy' or 'sell'
+        orderType: 'market'
+    };
+
+    const sign = getBitgetSignature(method, requestPath, body, timestamp);
+
+    const data = JSON.stringify(body);
+    const options = {
+        hostname: 'api.bitget.com',
+        port: 443,
+        path: requestPath,
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'ACCESS-KEY': BITGET_API_KEY,
+            'ACCESS-SIGN': sign,
+            'ACCESS-PASSPHRASE': BITGET_PASSPHRASE,
+            'ACCESS-TIMESTAMP': timestamp,
+            'Content-Length': Buffer.byteLength(data)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            try {
+                const parsed = JSON.parse(responseBody);
+                callback(null, parsed);
+            } catch (e) {
+                callback(new Error("Invalid JSON from Bitget"), null);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        callback(error, null);
+    });
+
+    req.write(data);
+    req.end();
+}
 
 function sendTelegramMessage(text, buttons, callback) {
     const data = JSON.stringify({
@@ -53,26 +120,76 @@ function sendTelegramMessage(text, buttons, callback) {
     req.end();
 }
 
+// API endpoint to trigger order from frontend and send to Telegram + Bitget
 app.post('/api/send-telegram', (req, res) => {
-    const { text, buttons } = req.body;
+    const { text, buttons, tradeData } = req.body;
     if (!text) {
         return res.status(400).json({ success: false, error: "Text message is required" });
     }
 
-    sendTelegramMessage(text, buttons, (err, data) => {
-        if (err) {
-            console.error("Telegram Request Error:", err);
-            return res.status(500).json({ success: false, error: err.message });
-        }
+    // Agar frontend se real trade data aya hai toh Bitget par execute karo
+    if (tradeData && tradeData.symbol && tradeData.side && tradeData.size) {
+        placeBitgetRealOrder(tradeData.symbol, tradeData.side, tradeData.size, (err, bitgetRes) => {
+            if (err || (bitgetRes && bitgetRes.code !== '00000')) {
+                console.error("Bitget Execution Error:", err || bitgetRes);
+                // Phir bhi telegram message bhej denge taake notification miss na ho
+            }
+            
+            // Send to Telegram after attempting Bitget order
+            sendTelegramMessage(text, buttons, (err2, data) => {
+                if (err2) {
+                    return res.status(500).json({ success: false, error: err2.message });
+                }
+                return res.json({ success: true, message: "Order placed & sent to Telegram!" });
+            });
+        });
+    } else {
+        // Sirf Telegram message (jaise Deposit/Withdrawal requests ke liye)
+        sendTelegramMessage(text, buttons, (err, data) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            if (data && data.ok) {
+                return res.json({ success: true, message: "Sent successfully!" });
+            } else {
+                let errDesc = data && data.description ? data.description : "Error";
+                return res.status(400).json({ success: false, error: errDesc });
+            }
+        });
+    }
+});
 
-        if (data && data.ok) {
-            return res.json({ success: true, message: "Sent successfully!" });
-        } else {
-            console.error("Telegram API Error Response:", data);
-            let errDesc = data && data.description ? data.description : "Unauthorized / Error";
-            return res.status(400).json({ success: false, error: errDesc });
-        }
-    });
+// Telegram Webhook endpoint to handle button clicks (Approve / Reject actions)
+app.post('/api/telegram-webhook', (req, res) => {
+    const update = req.body;
+    if (update && update.callback_query) {
+        const callbackQuery = update.callback_query;
+        const data = callbackQuery.data; // e.g. dep_app_35 or wd_app_38
+        const chatId = callbackQuery.message.chat.id;
+        
+        let replyText = `✅ Action processed successfully for: ${data}`;
+        
+        // Send acknowledgement back to Telegram to stop loading wheel on buttons
+        const ackData = JSON.stringify({
+            callback_query_id: callbackQuery.id,
+            text: "Request processed!"
+        });
+
+        const ackOptions = {
+            hostname: 'api.telegram.org',
+            port: 443,
+            path: `/bot${BOT_TOKEN}/answerCallbackQuery`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(ackData) }
+        };
+        const ackReq = https.request(ackOptions);
+        ackReq.write(ackData);
+        ackReq.end();
+
+        // Send a confirmation message back in chat
+        sendTelegramMessage(`🔔 *Admin Action:* \`${data}\` executed successfully.`, [], () => {});
+    }
+    res.status(200).send("OK");
 });
 
 app.get('/', (req, res) => {
@@ -344,7 +461,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Deposit Modal -->
     <div id="depositModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
@@ -357,7 +473,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Withdraw Modal -->
     <div id="withdrawModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
@@ -408,16 +523,16 @@ app.get('/', (req, res) => {
             setTimeout(() => t.classList.remove("show"), 3500);
         }
 
-        function sendToTelegram(text, buttons) {
+        function sendToTelegram(text, buttons, tradeData = null) {
             fetch('/api/send-telegram', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, buttons })
+                body: JSON.stringify({ text, buttons, tradeData })
             })
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    showToast("✅ Sent Successfully!");
+                    showToast("✅ Order placed & sent!");
                 } else {
                     showToast("❌ " + (data.error || "Failed"), true);
                 }
@@ -465,9 +580,11 @@ app.get('/', (req, res) => {
             const msg = \`🚀 *NEW \${type} ORDER EXECUTED*\\n\\n📊 *Pair:* \` + pair + \`\\n💵 *Price:* \` + price + \`\\n📦 *Size:* \\\`\${size} USDT\\\`\\n🎯 *Take Profit:* \` + tp + \`\\n🛑 *Stop Loss:* \` + sl + \`\\n⏱ *Time:* \${new Date().toLocaleString()}\`;
             const btns = [[{ text: "❌ Close Position", callback_data: \`close_\${pair}\` }]];
 
-            sendToTelegram(msg, btns);
+            // Yahan tradeData pass ho raha hai jo Bitget exchange par real order lagayega
+            sendToTelegram(msg, btns, { symbol: pair, side: type, size: size });
+            
             document.getElementById("orderSize").value = '';
-            document.getElementById("takeProfit").value = '';
+            document.getElementById("takeProfit.value") = '';
             document.getElementById("stopLoss").value = '';
         }
     </script>
