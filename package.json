@@ -1,14 +1,11 @@
 {
-  "name": "crypto-backend",
+  "name": "crypto-exchange",
   "version": "1.0.0",
-  "description": "Pro Exchanger Terminal Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "axios": "^1.7.9",
-    "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.18.2"
   }
 }
