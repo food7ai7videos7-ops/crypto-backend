@@ -1,11 +1,12 @@
 {
-  "name": "crypto-exchange",
+  "name": "crypto-backend",
   "version": "1.0.0",
+  "description": "Crypto Exchange Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.19.2"
   }
 }
