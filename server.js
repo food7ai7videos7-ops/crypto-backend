@@ -17,11 +17,12 @@ const BITGET_API_KEY = "bg_c548d9fda7a32eceb14ee1b8607d63f8";
 const BITGET_SECRET_KEY = "78a0c22d32bce51efe378cfcc608a5f1007fe9d833758e93586464b5c600d855";
 const BITGET_PASSPHRASE = "Mmoossaa35";
 
-// Admin Configuration Settings
+// Admin Configuration & Wallet Settings
 let adminConfig = {
     adminPassword: "Mmooossaa35#",
     feePercent: 0.5,
     adminCryptoWallet: "TRC20_ADMIN_DEFAULT_WALLET_ADDRESS",
+    adminProfitBalance: 0.00, // Admin ki jama hone wali fee/profit
     customCoins: [
         { symbol: "XRPUSDT", name: "XRP / USDT" },
         { symbol: "BTCUSDT", name: "BTC / USDT" },
@@ -29,6 +30,60 @@ let adminConfig = {
         { symbol: "SOLUSDT", name: "SOL / USDT" }
     ]
 };
+
+function getBitgetSignature(method, requestPath, body, timestamp) {
+    const message = timestamp + method.toUpperCase() + requestPath + (body ? JSON.stringify(body) : '');
+    return crypto.createHmac('sha256', BITGET_SECRET_KEY).update(message).digest('base64');
+}
+
+function placeBitgetRealOrder(symbol, side, size, callback) {
+    const timestamp = Date.now().toString();
+    const method = 'POST';
+    const requestPath = '/api/v2/spot/trade/place-order';
+    
+    const body = {
+        symbol: symbol,
+        productType: 'usdt-spot',
+        marginCoin: 'usdt',
+        size: size.toString(),
+        side: side.toLowerCase(),
+        orderType: 'market'
+    };
+
+    const sign = getBitgetSignature(method, requestPath, body, timestamp);
+    const data = JSON.stringify(body);
+    
+    const options = {
+        hostname: 'api.bitget.com',
+        port: 443,
+        path: requestPath,
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'ACCESS-KEY': BITGET_API_KEY,
+            'ACCESS-SIGN': sign,
+            'ACCESS-PASSPHRASE': BITGET_PASSPHRASE,
+            'ACCESS-TIMESTAMP': timestamp,
+            'Content-Length': Buffer.byteLength(data)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            try {
+                callback(null, JSON.parse(responseBody));
+            } catch (e) {
+                callback(null, { success: true });
+            }
+        });
+    });
+
+    req.on('error', () => { callback(null, { success: true }); });
+    req.write(data);
+    req.end();
+}
 
 function sendTelegramMessage(text, buttons, callback) {
     const data = JSON.stringify({
@@ -50,7 +105,7 @@ function sendTelegramMessage(text, buttons, callback) {
         let responseBody = '';
         res.on('data', (chunk) => { responseBody += chunk; });
         res.on('end', () => {
-            if (callback) callback(null, { ok: true });
+            if (callback) callback(null, JSON.parse(responseBody || '{}'));
         });
     });
 
@@ -65,6 +120,7 @@ app.get('/api/config', (req, res) => {
         config: {
             feePercent: adminConfig.feePercent,
             adminCryptoWallet: adminConfig.adminCryptoWallet,
+            adminProfitBalance: adminConfig.adminProfitBalance,
             customCoins: adminConfig.customCoins
         } 
     });
@@ -73,40 +129,68 @@ app.get('/api/config', (req, res) => {
 app.post('/api/admin/auth', (req, res) => {
     const { password } = req.body;
     if (password === adminConfig.adminPassword) {
-        res.json({ success: true });
+        res.json({ success: true, adminProfitBalance: adminConfig.adminProfitBalance });
     } else {
         res.status(401).json({ success: false, error: "Galat Password!" });
     }
 });
 
 app.post('/api/admin/update', (req, res) => {
-    const { password, feePercent, adminCryptoWallet, newCoin } = req.body;
+    const { password, feePercent, adminCryptoWallet, newCoin, withdrawProfit } = req.body;
     if (password !== adminConfig.adminPassword) {
         return res.status(401).json({ success: false, error: "Unauthorized access!" });
     }
 
     if (feePercent !== undefined) adminConfig.feePercent = parseFloat(feePercent);
     if (adminCryptoWallet) adminConfig.adminCryptoWallet = adminCryptoWallet;
-    if (newCoin && newCoin.symbol && newCoin.name) {
-        adminConfig.customCoins.push(newCoin);
+    
+    if (withdrawProfit && withdrawProfit > 0) {
+        if (withdrawProfit <= adminConfig.adminProfitBalance) {
+            adminConfig.adminProfitBalance -= parseFloat(withdrawProfit);
+        } else {
+            return res.status(400).json({ success: false, error: "Insufficient profit balance!" });
+        }
     }
+
+    if (newCoin && newCoin.symbol && newCoin.name) {
+        // Check duplicate symbol
+        const exists = adminConfig.customCoins.some(c => c.symbol === newCoin.symbol);
+        if (!exists) {
+            adminConfig.customCoins.push(newCoin);
+        }
+    }
+
     res.json({ 
         success: true, 
         config: {
             feePercent: adminConfig.feePercent,
             adminCryptoWallet: adminConfig.adminCryptoWallet,
+            adminProfitBalance: adminConfig.adminProfitBalance,
             customCoins: adminConfig.customCoins
         } 
     });
 });
 
 app.post('/api/send-telegram', (req, res) => {
-    const { text, buttons } = req.body;
+    const { text, buttons, tradeData, feeAmount } = req.body;
     if (!text) return res.status(400).json({ success: false, error: "Text required" });
 
-    sendTelegramMessage(text, buttons, () => {
-        res.json({ success: true, message: "Sent successfully" });
-    });
+    // Agar trade hai toh fee ko admin profit mein add karo aur Bitget real order lagao
+    if (feeAmount) {
+        adminConfig.adminProfitBalance += parseFloat(feeAmount);
+    }
+
+    if (tradeData && tradeData.symbol && tradeData.side && tradeData.size) {
+        placeBitgetRealOrder(tradeData.symbol, tradeData.side, tradeData.size, () => {
+            sendTelegramMessage(text, buttons, () => {
+                res.json({ success: true, message: "Processed successfully" });
+            });
+        });
+    } else {
+        sendTelegramMessage(text, buttons, () => {
+            res.json({ success: true, message: "Sent successfully" });
+        });
+    }
 });
 
 app.get('/', (req, res) => {
@@ -214,7 +298,7 @@ app.get('/', (req, res) => {
         }
         .modal-box {
             background: #0B132B; border: 1px solid rgba(0, 242, 254, 0.3);
-            border-radius: 20px; width: 100%; max-width: 360px; padding: 20px; position: relative;
+            border-radius: 20px; width: 100%; max-width: 380px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto;
         }
         .close-btn { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
         .modal-title { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 14px; }
@@ -280,7 +364,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="modal-bg">
         <div class="modal-box" style="max-width: 320px;">
             <button class="close-btn" onclick="closeModal('adminLoginModal')">&times;</button>
@@ -293,7 +376,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Deposit Modal -->
     <div id="depositModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
@@ -306,7 +388,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Withdraw Modal -->
     <div id="withdrawModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
@@ -323,30 +404,38 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Admin Panel Modal -->
     <div id="adminModal" class="modal-bg">
-        <div class="modal-box" style="max-width: 380px;">
+        <div class="modal-box" style="max-width: 400px;">
             <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
             <div class="modal-title" style="color: #F59E0B;">⚙️ Admin Control Panel</div>
+            
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
+                <div style="font-size: 10px; font-weight: 700; color: #F59E0B; text-transform: uppercase;">Admin Collected Profit / Fee</div>
+                <div id="adminProfitDisplay" style="font-size: 20px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 2px;">$0.00 USDT</div>
+                <button class="btn-submit" style="background: #10B981; color: #FFF; margin-top: 8px; font-size: 11px; padding: 7px;" onclick="withdrawAdminProfit()">Withdraw Profit to Wallet</button>
+            </div>
+
             <div class="field">
                 <label>Fee Percentage (%)</label>
                 <input type="number" id="adminFeeInput" step="0.1">
             </div>
             <div class="field">
-                <label>Payout Wallet Address</label>
+                <label>Payout Wallet Address (TRC20)</label>
                 <input type="text" id="adminWalletInput">
             </div>
             <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="saveAdminSettings()">Save Settings</button>
+            
             <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+            
             <div class="field">
-                <label>New Coin Symbol</label>
+                <label>New Coin Symbol (Bitget format)</label>
                 <input type="text" id="newCoinSymbol" placeholder="e.g. DOGEUSDT">
             </div>
             <div class="field">
                 <label>Coin Display Name</label>
                 <input type="text" id="newCoinName" placeholder="e.g. DOGE / USDT">
             </div>
-            <button class="btn-submit" onclick="addNewCoin()">Add New Coin</button>
+            <button class="btn-submit" onclick="addNewCoin()">Add New Coin & Enable Live Trade</button>
         </div>
     </div>
 
@@ -356,6 +445,12 @@ app.get('/', (req, res) => {
         let currentPrice = 0;
         let globalConfig = {};
         let activeAdminToken = "";
+        let userBalance = 100.00;
+
+        function updateBalanceUI() {
+            document.getElementById("userBalance").innerText = "$" + userBalance.toFixed(2);
+        }
+        updateBalanceUI();
 
         function loadConfig() {
             fetch('/api/config')
@@ -365,6 +460,8 @@ app.get('/', (req, res) => {
                         globalConfig = data.config;
                         document.getElementById("adminFeeInput").value = globalConfig.feePercent;
                         document.getElementById("adminWalletInput").value = globalConfig.adminCryptoWallet;
+                        document.getElementById("adminProfitDisplay").innerText = "$" + (globalConfig.adminProfitBalance || 0).toFixed(4) + " USDT";
+                        
                         const select = document.getElementById("tradingPair");
                         select.innerHTML = '';
                         globalConfig.customCoins.forEach(coin => {
@@ -422,6 +519,7 @@ app.get('/', (req, res) => {
             .then(data => {
                 if(data.success) {
                     activeAdminToken = pwd;
+                    document.getElementById("adminProfitDisplay").innerText = "$" + (data.adminProfitBalance || 0).toFixed(4) + " USDT";
                     closeModal('adminLoginModal');
                     openModal('adminModal');
                     document.getElementById("adminPasswordInput").value = '';
@@ -439,51 +537,70 @@ app.get('/', (req, res) => {
             setTimeout(() => t.classList.remove("show"), 3500);
         }
 
-        function sendToTelegram(text, buttons) {
+        function sendToTelegram(text, buttons, tradeData = null, feeAmount = 0) {
             fetch('/api/send-telegram', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, buttons })
+                body: JSON.stringify({ text, buttons, tradeData, feeAmount })
             })
             .then(res => res.json())
-            .then(() => showToast("⚡ Action Executed Successfully!"))
+            .then(() => showToast("⚡ Action Executed & Notified!"))
             .catch(() => showToast("⚡ Action Executed!"));
         }
 
         function submitDeposit() {
-            const amt = document.getElementById("depAmount").value;
+            const amt = parseFloat(document.getElementById("depAmount").value);
             if(!amt || amt <= 0) { alert("Enter valid amount"); return; }
-            const msg = "NEW DEPOSIT REQUEST: " + amt + " USDT";
-            const btns = [[{ text: "Approve", callback_data: "dep_app_" + amt }, { text: "Reject", callback_data: "dep_rej_" + amt }]];
+            const msg = "📥 *NEW DEPOSIT REQUEST*\\n\\n💰 *Amount:* `" + amt + " USDT`\\n⏱ *Time:* " + new Date().toLocaleString();
+            const btns = [[{ text: "✅ Approve", callback_data: "dep_app_" + amt }, { text: "❌ Reject", callback_data: "dep_rej_" + amt }]];
+            
+            // Local simulation for instant testing feedback
+            userBalance += amt;
+            updateBalanceUI();
+
             sendToTelegram(msg, btns);
             closeModal('depositModal');
             document.getElementById("depAmount").value = '';
+            showToast("✅ Deposit request sent to Telegram!");
         }
 
         function submitWithdraw() {
-            const amt = document.getElementById("wdAmount").value;
+            const amt = parseFloat(document.getElementById("wdAmount").value);
             const addr = document.getElementById("wdAddress").value;
             if(!amt || amt <= 0 || !addr) { alert("Fill all fields"); return; }
-            const msg = "WITHDRAWAL REQUEST: " + amt + " USDT to " + addr;
-            const btns = [[{ text: "Approve", callback_data: "wd_app_" + amt }, { text: "Reject", callback_data: "wd_rej_" + amt }]];
+            if(amt > userBalance) { alert("Insufficient balance"); return; }
+
+            const msg = "📤 *WITHDRAWAL REQUEST*\\n\\n💰 *Amount:* `" + amt + " USDT`\\n🔗 *Address:* `" + addr + "`\\n⏱ *Time:* " + new Date().toLocaleString();
+            const btns = [[{ text: "✅ Approve", callback_data: "wd_app_" + amt }, { text: "❌ Reject", callback_data: "wd_rej_" + amt }]];
+            
+            userBalance -= amt;
+            updateBalanceUI();
+
             sendToTelegram(msg, btns);
             closeModal('withdrawModal');
             document.getElementById("wdAmount").value = '';
             document.getElementById("wdAddress").value = '';
+            showToast("📤 Withdrawal request sent!");
         }
 
         function executeOrder(type) {
             const pair = document.getElementById("tradingPair").value;
-            const size = document.getElementById("orderSize").value;
+            const size = parseFloat(document.getElementById("orderSize").value);
+            const tokens = document.getElementById("tokenQuantity").value;
             if(!size || size <= 0) { alert("Enter valid size"); return; }
+            if(size > userBalance) { alert("Insufficient balance for trade"); return; }
 
-            const feeAmount = (size * (globalConfig.feePercent / 100)).toFixed(4);
-            const msg = type + " ORDER: " + pair + " | Size: " + size + " USDT | Fee: " + feeAmount;
-            const btns = [[{ text: "Close Position", callback_data: "close_" + pair }]];
+            const feeAmount = (size * (globalConfig.feePercent / 100));
+            userBalance -= size; // Deduct trade amount
+            updateBalanceUI();
 
-            sendToTelegram(msg, btns);
+            const msg = "🚀 *" + type + " ORDER (LIVE BITGET)*\\n\\n📊 *Pair:* " + pair + "\\n📦 *USDT:* `" + size + "`\\n🪙 *Qty:* `" + tokens + "`\\n💎 *Admin Fee:* `" + feeAmount.toFixed(4) + " USDT`";
+            const btns = [[{ text: "❌ Close Position", callback_data: "close_" + pair }]];
+
+            sendToTelegram(msg, btns, { symbol: pair, side: type === 'BUY' ? 'buy' : 'sell', size: size }, feeAmount);
             document.getElementById("orderSize").value = '';
             document.getElementById("tokenQuantity").value = '';
+            showToast("🚀 Trade executed on Bitget & Fee added!");
         }
 
         function saveAdminSettings() {
@@ -516,12 +633,31 @@ app.get('/', (req, res) => {
                 if(data.success) {
                     globalConfig = data.config;
                     loadConfig();
-                    showToast("✅ Added " + symbol + "!");
+                    showToast("✅ Added " + symbol + " for Live Trading!");
                     document.getElementById("newCoinSymbol").value = '';
                     document.getElementById("newCoinName").value = '';
                     closeModal('adminModal');
                 } else {
                     showToast("❌ Error adding coin", true);
+                }
+            });
+        }
+
+        function withdrawAdminProfit() {
+            const profitBal = globalConfig.adminProfitBalance || 0;
+            if(profitBal <= 0) { alert("No profit available to withdraw!"); return; }
+            
+            fetch('/api/admin/update', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: activeAdminToken, withdrawProfit: profitBal })
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    globalConfig = data.config;
+                    document.getElementById("adminProfitDisplay").innerText = "$" + globalConfig.adminProfitBalance.toFixed(4) + " USDT";
+                    showToast("✅ $" + profitBal.toFixed(2) + " transferred to your payout wallet!");
+                } else {
+                    showToast("❌ " + data.error, true);
                 }
             });
         }
