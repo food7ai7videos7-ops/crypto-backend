@@ -149,7 +149,7 @@ app.post('/api/trade', async (req, res) => {
 
     db.activity.unshift(`[Trade] ${side} ${symbol} executed! Fee: $0.0000`);
     res.json({ success: true, balance: db.balance, holdings: db.holdings, avgPrice: db.avgPrice });
-});
+}); 
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT} 🚀`));
