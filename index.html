@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX TRADING :: Professional Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #050811;
+            --bg-card: rgba(13, 19, 33, 0.85);
+            --border-neon: rgba(0, 242, 254, 0.2);
+            --accent-cyan: #00F2FE;
+            --accent-blue: #4FACFE;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --text-main: #F1F5F9;
+            --text-muted: #64748B;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .terminal-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-neon);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(3, 7, 18, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .logo {
+            font-size: 16px; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-buttons { display: flex; gap: 6px; }
+        .btn-top {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main); padding: 6px 10px;
+            border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+        }
+        .btn-admin { color: #F59E0B; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
+        .content { padding: 20px; }
+        .wallet-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px; padding: 16px; margin-bottom: 16px;
+        }
+        .w-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+        .w-val { font-size: 26px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 4px; }
+        .trade-box {
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px; padding: 16px;
+        }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+        select, input {
+            width: 100%; padding: 11px 14px;
+            background: #020617; border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main); border-radius: 10px; font-size: 13px; outline: none;
+        }
+        select:focus, input:focus { border-color: var(--accent-cyan); }
+        .market-ticker {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 12px;
+        }
+        .ticker-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+        .ticker-price { font-size: 15px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green); }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+        .btn-trade {
+            padding: 12px; border: none; border-radius: 10px;
+            font-size: 13px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+        }
+        .btn-buy { background: #10B981; color: #FFF; }
+        .btn-sell { background: #EF4444; color: #FFF; }
+        .modal-bg {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.9); justify-content: center; align-items: center; z-index: 100; padding: 16px;
+        }
+        .modal-box {
+            background: #0B132B; border: 1px solid rgba(0, 242, 254, 0.3);
+            border-radius: 20px; width: 100%; max-width: 380px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto;
+        }
+        .close-btn { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+        .modal-title { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 14px; }
+        .btn-submit {
+            width: 100%; padding: 11px; border: none; border-radius: 10px;
+            font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; margin-top: 10px;
+            background: var(--accent-cyan); color: #020617;
+        }
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(70px);
+            background: var(--accent-green); color: #020617; padding: 10px 18px; border-radius: 20px;
+            font-weight: 800; font-size: 12px; transition: transform 0.3s ease; z-index: 1000;
+        }
+        .toast.error { background: var(--accent-red); color: #FFF; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-container">
+        <header>
+            <div class="logo">⚡ APEX PRO</div>
+            <div class="nav-buttons">
+                <button class="btn-top" onclick="openModal('depositModal')">+ Deposit</button>
+                <button class="btn-top" onclick="openModal('withdrawModal')">- Withdraw</button>
+                <button class="btn-top btn-admin" onclick="openModal('adminLoginModal')">⚙️ Admin</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="wallet-card">
+                <div class="w-title">Live Trading Balance</div>
+                <div class="w-val" id="userBalance">$100.00</div>
+            </div>
+
+            <div class="trade-box">
+                <div class="field">
+                    <label>Select Asset / Coin</label>
+                    <select id="tradingPair" onchange="fetchTicker()"></select>
+                </div>
+
+                <div class="market-ticker">
+                    <span class="ticker-label">Market Price</span>
+                    <span class="ticker-price" id="livePrice">Loading...</span>
+                </div>
+
+                <div class="row-2">
+                    <div class="field">
+                        <label>USDT Amount</label>
+                        <input type="number" id="orderSize" placeholder="0.00" oninput="calculateTokens()">
+                    </div>
+                    <div class="field">
+                        <label>Coin Quantity</label>
+                        <input type="number" id="tokenQuantity" placeholder="0.00" oninput="calculateUSDT()">
+                    </div>
+                </div>
+
+                <div class="action-btns">
+                    <button class="btn-trade btn-buy" onclick="executeOrder('BUY')">🟢 Buy Long</button>
+                    <button class="btn-trade btn-sell" onclick="executeOrder('SELL')">🔴 Sell Short</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminLoginModal" class="modal-bg">
+        <div class="modal-box" style="max-width: 320px;">
+            <button class="close-btn" onclick="closeModal('adminLoginModal')">&times;</button>
+            <div class="modal-title" style="color: #F59E0B;">🔐 Admin Login</div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" id="adminPasswordInput" placeholder="Enter password...">
+            </div>
+            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="verifyAdminPassword()">Login</button>
+        </div>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div id="depositModal" class="modal-bg">
+        <div class="modal-box">
+            <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
+            <div class="modal-title" style="color: var(--accent-cyan);">Instant Deposit</div>
+            <div class="field">
+                <label>Amount (USDT)</label>
+                <input type="number" id="depAmount" placeholder="Enter amount">
+            </div>
+            <button class="btn-submit" onclick="submitDeposit()">Confirm Deposit</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="modal-bg">
+        <div class="modal-box">
+            <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
+            <div class="modal-title" style="color: var(--accent-red);">Instant Withdrawal</div>
+            <div class="field">
+                <label>Amount (USDT)</label>
+                <input type="number" id="wdAmount" placeholder="Enter amount">
+            </div>
+            <div class="field">
+                <label>TRC20 Address</label>
+                <input type="text" id="wdAddress" placeholder="Paste address">
+            </div>
+            <button class="btn-submit" style="background: var(--accent-red); color: #FFF;" onclick="submitWithdraw()">Request Withdrawal</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal-bg">
+        <div class="modal-box" style="max-width: 400px;">
+            <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
+            <div class="modal-title" style="color: #F59E0B;">⚙️ Admin Control Panel</div>
+            
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
+                <div style="font-size: 10px; font-weight: 700; color: #F59E0B; text-transform: uppercase;">Admin Collected Profit / Fee</div>
+                <div id="adminProfitDisplay" style="font-size: 20px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 2px;">$0.00 USDT</div>
+                <button class="btn-submit" style="background: #10B981; color: #FFF; margin-top: 8px; font-size: 11px; padding: 7px;" onclick="withdrawAdminProfit()">Withdraw Profit to Wallet</button>
+            </div>
+
+            <div class="field">
+                <label>Fee Percentage (%)</label>
+                <input type="number" id="adminFeeInput" step="0.1">
+            </div>
+            <div class="field">
+                <label>Payout Wallet Address (TRC20)</label>
+                <input type="text" id="adminWalletInput">
+            </div>
+            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="saveAdminSettings()">Save Settings</button>
+            
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+            
+            <div class="field">
+                <label>New Coin Symbol (Bitget format)</label>
+                <input type="text" id="newCoinSymbol" placeholder="e.g. DOGEUSDT">
+            </div>
+            <div class="field">
+                <label>Coin Display Name</label>
+                <input type="text" id="newCoinName" placeholder="e.g. DOGE / USDT">
+            </div>
+            <button class="btn-submit" onclick="addNewCoin()">Add New Coin & Enable Live Trade</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Success</div>
+
+    <script>
+        const BOT_TOKEN = "8995508972:AAGSPih40VfiRDLsor37T5oo7fxMFQqi9Qc"; 
+        const CHAT_ID = "6504370273";
+
+        let currentPrice = 0;
+        let userBalance = 100.00;
+        
+        let globalConfig = {
+            adminPassword: "Mmooossaa35#",
+            feePercent: 0.5,
+            adminCryptoWallet: "TRC20_ADMIN_DEFAULT_WALLET_ADDRESS",
+            adminProfitBalance: 0.00,
+            customCoins: [
+                { symbol: "XRPUSDT", name: "XRP / USDT" },
+                { symbol: "BTCUSDT", name: "BTC / USDT" },
+                { symbol: "ETHUSDT", name: "ETH / USDT" },
+                { symbol: "SOLUSDT", name: "SOL / USDT" }
+            ]
+        };
+
+        function updateBalanceUI() {
+            document.getElementById("userBalance").innerText = "$" + userBalance.toFixed(2);
+        }
+        updateBalanceUI();
+
+        function loadConfig() {
+            document.getElementById("adminFeeInput").value = globalConfig.feePercent;
+            document.getElementById("adminWalletInput").value = globalConfig.adminCryptoWallet;
+            document.getElementById("adminProfitDisplay").innerText = "$" + globalConfig.adminProfitBalance.toFixed(4) + " USDT";
+            
+            const select = document.getElementById("tradingPair");
+            select.innerHTML = '';
+            globalConfig.customCoins.forEach(coin => {
+                let opt = document.createElement("option");
+                opt.value = coin.symbol;
+                opt.innerText = coin.name;
+                select.appendChild(opt);
+            });
+            fetchTicker();
+        }
+        loadConfig();
+
+        function fetchTicker() {
+            const symbol = document.getElementById("tradingPair").value;
+            if(!symbol) return;
+            fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol)
+                .then(res => res.json())
+                .then(data => {
+                    if(data && data.data && data.data.length > 0) {
+                        currentPrice = parseFloat(data.data[0].lastPr);
+                        document.getElementById("livePrice").innerText = '$' + currentPrice.toFixed(4);
+                    }
+                })
+                .catch(() => {});
+        }
+        setInterval(fetchTicker, 4000);
+
+        function calculateTokens() {
+            const usdt = parseFloat(document.getElementById("orderSize").value) || 0;
+            if(currentPrice > 0) {
+                document.getElementById("tokenQuantity").value = (usdt / currentPrice).toFixed(6);
+            }
+        }
+
+        function calculateUSDT() {
+            const tokens = parseFloat(document.getElementById("tokenQuantity").value) || 0;
+            if(currentPrice > 0) {
+                document.getElementById("orderSize").value = (tokens * currentPrice).toFixed(2);
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function verifyAdminPassword() {
+            const pwd = document.getElementById("adminPasswordInput").value;
+            if (pwd === globalConfig.adminPassword) {
+                document.getElementById("adminProfitDisplay").innerText = "$" + globalConfig.adminProfitBalance.toFixed(4) + " USDT";
+                closeModal('adminLoginModal');
+                openModal('adminModal');
+                document.getElementById("adminPasswordInput").value = '';
+            } else {
+                showToast("❌ Galat Password!", true);
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            if(isError) t.classList.add("error"); else t.classList.remove("error");
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 3500);
+        }
+
+        function sendToTelegram(text, buttons = []) {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: text,
+                    parse_mode: "Markdown",
+                    reply_markup: { inline_keyboard: buttons }
+                })
+            }).then(() => showToast("⚡ Action Executed & Notified!"))
+              .catch(() => showToast("⚡ Action Executed!"));
+        }
+
+        function submitDeposit() {
+            const amt = parseFloat(document.getElementById("depAmount").value);
+            if(!amt || amt <= 0) { alert("Enter valid amount"); return; }
+            const msg = "📥 *NEW DEPOSIT REQUEST*\n\n💰 *Amount:* `" + amt + " USDT`\n⏱ *Time:* " + new Date().toLocaleString();
+            const btns = [[{ text: "✅ Approve", callback_data: "dep_app_" + amt }, { text: "❌ Reject", callback_data: "dep_rej_" + amt }]];
+            
+            userBalance += amt;
+            updateBalanceUI();
+
+            sendToTelegram(msg, btns);
+            closeModal('depositModal');
+            document.getElementById("depAmount").value = '';
+            showToast("✅ Deposit request sent to Telegram!");
+        }
+
+        function submitWithdraw() {
+            const amt = parseFloat(document.getElementById("wdAmount").value);
+            const addr = document.getElementById("wdAddress").value;
+            if(!amt || amt <= 0 || !addr) { alert("Fill all fields"); return; }
+            if(amt > userBalance) { alert("Insufficient balance"); return; }
+
+            const msg = "📤 *WITHDRAWAL REQUEST*\n\n💰 *Amount:* `" + amt + " USDT`\n🔗 *Address:* `" + addr + "`\n⏱ *Time:* " + new Date().toLocaleString();
+            const btns = [[{ text: "✅ Approve", callback_data: "wd_app_" + amt }, { text: "❌ Reject", callback_data: "wd_rej_" + amt }]];
+            
+            userBalance -= amt;
+            updateBalanceUI();
+
+            sendToTelegram(msg, btns);
+            closeModal('withdrawModal');
+            document.getElementById("wdAmount").value = '';
+            document.getElementById("wdAddress").value = '';
+            showToast("📤 Withdrawal request sent!");
+        }
+
+        function executeOrder(type) {
+            const pair = document.getElementById("tradingPair").value;
+            const size = parseFloat(document.getElementById("orderSize").value);
+            const tokens = document.getElementById("tokenQuantity").value;
+            if(!size || size <= 0) { alert("Enter valid size"); return; }
+            if(size > userBalance) { alert("Insufficient balance for trade"); return; }
+
+            const feeAmount = (size * (globalConfig.feePercent / 100));
+            globalConfig.adminProfitBalance += feeAmount;
+            userBalance -= size;
+            updateBalanceUI();
+
+            const msg = "🚀 *" + type + " ORDER (LIVE)*\n\n📊 *Pair:* " + pair + "\n📦 *USDT:* `" + size + "`\n🪙 *Qty:* `" + tokens + "`\n💎 *Admin Fee:* `" + feeAmount.toFixed(4) + " USDT`";
+            const btns = [[{ text: "❌ Close Position", callback_data: "close_" + pair }]];
+
+            sendToTelegram(msg, btns);
+            document.getElementById("orderSize").value = '';
+            document.getElementById("tokenQuantity").value = '';
+            showToast("🚀 Trade executed & Fee added!");
+        }
+
+        function saveAdminSettings() {
+            const feePercent = document.getElementById("adminFeeInput").value;
+            const adminCryptoWallet = document.getElementById("adminWalletInput").value;
+            if(feePercent !== undefined) globalConfig.feePercent = parseFloat(feePercent);
+            if(adminCryptoWallet) globalConfig.adminCryptoWallet = adminCryptoWallet;
+            
+            showToast("⚙️ Settings Saved!");
+            closeModal('adminModal');
+        }
+
+        function addNewCoin() {
+            const symbol = document.getElementById("newCoinSymbol").value.toUpperCase();
+            const name = document.getElementById("newCoinName").value;
+            if(!symbol || !name) { alert("Enter both symbol and name"); return; }
+            
+            const exists = globalConfig.customCoins.some(c => c.symbol === symbol);
+            if (!exists) {
+                globalConfig.customCoins.push({ symbol, name });
+                loadConfig();
+                showToast("✅ Added " + symbol + " for Live Trading!");
+            } else {
+                showToast("⚠️ Coin already exists!", true);
+            }
+            document.getElementById("newCoinSymbol").value = '';
+            document.getElementById("newCoinName").value = '';
+            closeModal('adminModal');
+        }
+
+        function withdrawAdminProfit() {
+            const profitBal = globalConfig.adminProfitBalance || 0;
+            if(profitBal <= 0) { alert("No profit available to withdraw!"); return; }
+            
+            globalConfig.adminProfitBalance = 0;
+            document.getElementById("adminProfitDisplay").innerText = "$0.0000 USDT";
+            showToast("✅ Profit transferred to your payout wallet!");
+        }
+    </script>
+</body>
+</html>
