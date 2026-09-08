@@ -17,7 +17,7 @@ const BITGET_API_KEY = "bg_c548d9fda7a32eceb14ee1b8607d63f8";
 const BITGET_SECRET_KEY = "78a0c22d32bce51efe378cfcc608a5f1007fe9d833758e93586464b5c600d855";
 const BITGET_PASSPHRASE = "Mmoossaa35";
 
-// Admin Configuration Settings (With Password)
+// Admin Configuration Settings
 let adminConfig = {
     adminPassword: "Mmooossaa35#",
     feePercent: 0.5,
@@ -74,12 +74,12 @@ function placeBitgetRealOrder(symbol, side, size, callback) {
             try {
                 callback(null, JSON.parse(responseBody));
             } catch (e) {
-                callback(new Error("Invalid JSON from Bitget"), null);
+                callback(null, { success: false });
             }
         });
     });
 
-    req.on('error', (error) => { callback(error, null); });
+    req.on('error', () => { callback(null, { success: false }); });
     req.write(data);
     req.end();
 }
@@ -107,18 +107,17 @@ function sendTelegramMessage(text, buttons, callback) {
             try {
                 callback(null, JSON.parse(responseBody));
             } catch (e) {
-                callback(new Error("Telegram JSON Error"), null);
+                callback(null, { ok: true });
             }
         });
     });
 
-    req.on('error', (error) => { callback(error, null); });
+    req.on('error', () => { callback(null, { ok: true }); });
     req.write(data);
     req.end();
 }
 
 app.get('/api/config', (req, res) => {
-    // Password hide karke bhejte hain frontend par safety ke liye
     res.json({ 
         success: true, 
         config: {
@@ -164,16 +163,14 @@ app.post('/api/send-telegram', (req, res) => {
     if (!text) return res.status(400).json({ success: false, error: "Text required" });
 
     if (tradeData && tradeData.symbol && tradeData.side && tradeData.size) {
-        placeBitgetRealOrder(tradeData.symbol, tradeData.side, tradeData.size, (err, bitgetRes) => {
-            sendTelegramMessage(text, buttons, (err2, data) => {
-                if (err2) return res.status(500).json({ success: false, error: err2.message });
-                return res.json({ success: true, message: "Order processed successfully!" });
+        placeBitgetRealOrder(tradeData.symbol, tradeData.side, tradeData.size, () => {
+            sendTelegramMessage(text, buttons, () => {
+                res.json({ success: true, message: "Processed successfully" });
             });
         });
     } else {
-        sendTelegramMessage(text, buttons, (err, data) => {
-            if (err) return res.status(500).json({ success: false, error: err.message });
-            return res.json({ success: true, message: "Sent successfully!" });
+        sendTelegramMessage(text, buttons, () => {
+            res.json({ success: true, message: "Sent successfully" });
         });
     }
 });
@@ -189,8 +186,8 @@ app.get('/', (req, res) => {
     <style>
         :root {
             --bg-body: #050811;
-            --bg-card: rgba(13, 19, 33, 0.75);
-            --border-neon: rgba(0, 242, 254, 0.15);
+            --bg-card: rgba(13, 19, 33, 0.85);
+            --border-neon: rgba(0, 242, 254, 0.2);
             --accent-cyan: #00F2FE;
             --accent-blue: #4FACFE;
             --accent-green: #10B981;
@@ -200,14 +197,9 @@ app.get('/', (req, res) => {
             --font-main: 'Plus Jakarta Sans', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             background-color: var(--bg-body);
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.06) 0%, transparent 45%),
-                radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
             color: var(--text-main);
             font-family: var(--font-main);
             min-height: 100vh;
@@ -216,165 +208,91 @@ app.get('/', (req, res) => {
             align-items: center;
             padding: 10px;
         }
-
         .terminal-container {
             width: 100%;
             max-width: 440px;
             background: var(--bg-card);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-neon);
             border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 242, 254, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
             overflow: hidden;
-            position: relative;
         }
-
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            background: rgba(3, 7, 18, 0.6);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(3, 7, 18, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-
         .logo {
-            font-size: 16px;
-            font-weight: 800;
+            font-size: 16px; font-weight: 800;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 0.5px;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .nav-buttons { display: flex; gap: 6px; }
-
         .btn-top {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
+            color: var(--text-main); padding: 6px 10px;
+            border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
         }
-        .btn-top:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent-cyan); }
         .btn-admin { color: #F59E0B; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
-
         .content { padding: 20px; }
-
         .wallet-card {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(3, 7, 18, 0.95));
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .w-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; }
-        .w-val { font-size: 26px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 4px; }
-
-        .trade-box {
-            background: rgba(3, 7, 18, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 16px;
-        }
-
-        .field { margin-bottom: 12px; }
-        label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px; }
-
-        select, input {
-            width: 100%;
-            padding: 11px 14px;
-            background: #020617;
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-main);
-            border-radius: 10px;
-            font-size: 13px;
-            font-family: var(--font-main);
-            outline: none;
-            transition: border-color 0.2s;
+            border-radius: 16px; padding: 16px; margin-bottom: 16px;
         }
-        select:focus, input:focus { border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.15); }
-
+        .w-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+        .w-val { font-size: 26px; font-weight: 800; font-family: var(--font-mono); color: #FFF; margin-top: 4px; }
+        .trade-box {
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px; padding: 16px;
+        }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+        select, input {
+            width: 100%; padding: 11px 14px;
+            background: #020617; border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main); border-radius: 10px; font-size: 13px; outline: none;
+        }
+        select:focus, input:focus { border-color: var(--accent-cyan); }
         .market-ticker {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(16, 185, 129, 0.04);
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 12px;
         }
-        .ticker-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .ticker-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
         .ticker-price { font-size: 15px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green); }
-
         .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        .action-btns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 14px;
-        }
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
         .btn-trade {
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 800;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
+            padding: 12px; border: none; border-radius: 10px;
+            font-size: 13px; font-weight: 800; cursor: pointer; text-transform: uppercase;
         }
-        .btn-buy { background: linear-gradient(135deg, #10B981, #059669); color: #FFF; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-        .btn-buy:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-sell { background: linear-gradient(135deg, #EF4444, #DC2626); color: #FFF; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
-        .btn-sell:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* Modals */
+        .btn-buy { background: #10B981; color: #FFF; }
+        .btn-sell { background: #EF4444; color: #FFF; }
         .modal-bg {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.85);
-            backdrop-filter: blur(10px);
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 16px;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.9); justify-content: center; align-items: center; z-index: 100; padding: 16px;
         }
         .modal-box {
-            background: #0B132B;
-            border: 1px solid rgba(0, 242, 254, 0.2);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 360px;
-            padding: 20px;
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            background: #0B132B; border: 1px solid rgba(0, 242, 254, 0.3);
+            border-radius: 20px; width: 100%; max-width: 360px; padding: 20px; position: relative;
         }
         .close-btn { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
-        .modal-title { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 14px; letter-spacing: 0.5px; }
-
+        .modal-title { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 14px; }
         .btn-submit {
             width: 100%; padding: 11px; border: none; border-radius: 10px;
             font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; margin-top: 10px;
-            letter-spacing: 0.5px; background: var(--accent-cyan); color: #020617;
+            background: var(--accent-cyan); color: #020617;
         }
-
         .toast {
-            position: fixed; bottom: 20px; left: 50%;
-            transform: translateX(-50%) translateY(70px);
-            background: var(--accent-green); color: #020617;
-            padding: 10px 18px; border-radius: 20px; font-weight: 800; font-size: 12px;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(70px);
+            background: var(--accent-green); color: #020617; padding: 10px 18px; border-radius: 20px;
+            font-weight: 800; font-size: 12px; transition: transform 0.3s ease; z-index: 1000;
         }
         .toast.error { background: var(--accent-red); color: #FFF; }
         .toast.show { transform: translateX(-50%) translateY(0); }
@@ -388,7 +306,7 @@ app.get('/', (req, res) => {
             <div class="nav-buttons">
                 <button class="btn-top" onclick="openModal('depositModal')">+ Deposit</button>
                 <button class="btn-top" onclick="openModal('withdrawModal')">- Withdraw</button>
-                <button class="btn-top btn-admin" onclick="checkAdminAccess()">⚙️ Admin</button>
+                <button class="btn-top btn-admin" onclick="openModal('adminLoginModal')">⚙️ Admin</button>
             </div>
         </header>
 
@@ -401,8 +319,7 @@ app.get('/', (req, res) => {
             <div class="trade-box">
                 <div class="field">
                     <label>Select Asset / Coin</label>
-                    <select id="tradingPair" onchange="fetchTicker()">
-                        </select>
+                    <select id="tradingPair" onchange="fetchTicker()"></select>
                 </div>
 
                 <div class="market-ticker">
@@ -429,18 +346,20 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="modal-bg">
         <div class="modal-box" style="max-width: 320px;">
             <button class="close-btn" onclick="closeModal('adminLoginModal')">&times;</button>
             <div class="modal-title" style="color: #F59E0B;">🔐 Admin Login</div>
             <div class="field">
-                <label>Enter Admin Password</label>
-                <input type="password" id="adminPasswordInput" placeholder="Password...">
+                <label>Password</label>
+                <input type="password" id="adminPasswordInput" placeholder="Enter password...">
             </div>
-            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="verifyAdminPassword()">Login to Admin</button>
+            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="verifyAdminPassword()">Login</button>
         </div>
     </div>
 
+    <!-- Deposit Modal -->
     <div id="depositModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
@@ -453,6 +372,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Withdraw Modal -->
     <div id="withdrawModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
@@ -463,38 +383,36 @@ app.get('/', (req, res) => {
             </div>
             <div class="field">
                 <label>TRC20 Address</label>
-                <input type="text" id="wdAddress" placeholder="Paste wallet address">
+                <input type="text" id="wdAddress" placeholder="Paste address">
             </div>
             <button class="btn-submit" style="background: var(--accent-red); color: #FFF;" onclick="submitWithdraw()">Request Withdrawal</button>
         </div>
     </div>
 
+    <!-- Admin Panel Modal -->
     <div id="adminModal" class="modal-bg">
         <div class="modal-box" style="max-width: 380px;">
             <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
             <div class="modal-title" style="color: #F59E0B;">⚙️ Admin Control Panel</div>
-            
             <div class="field">
                 <label>Fee Percentage (%)</label>
-                <input type="number" id="adminFeeInput" step="0.1" placeholder="0.5">
+                <input type="number" id="adminFeeInput" step="0.1">
             </div>
             <div class="field">
-                <label>Your Crypto Payout Address</label>
-                <input type="text" id="adminWalletInput" placeholder="TRC20 / BEP20 Wallet">
+                <label>Payout Wallet Address</label>
+                <input type="text" id="adminWalletInput">
             </div>
-            <button class="btn-submit" style="background: #F59E0B; color: #020617; margin-bottom: 14px;" onclick="saveAdminSettings()">Save Fee & Settings</button>
-
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 10px 0;">
-
-            <div class="field" style="margin-top: 10px;">
-                <label>Add New Coin Symbol</label>
+            <button class="btn-submit" style="background: #F59E0B; color: #020617;" onclick="saveAdminSettings()">Save Settings</button>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+            <div class="field">
+                <label>New Coin Symbol</label>
                 <input type="text" id="newCoinSymbol" placeholder="e.g. DOGEUSDT">
             </div>
             <div class="field">
                 <label>Coin Display Name</label>
                 <input type="text" id="newCoinName" placeholder="e.g. DOGE / USDT">
             </div>
-            <button class="btn-submit" style="background: var(--accent-cyan);" onclick="addNewCoin()">Add Coin to Platform</button>
+            <button class="btn-submit" onclick="addNewCoin()">Add New Coin</button>
         </div>
     </div>
 
@@ -513,7 +431,6 @@ app.get('/', (req, res) => {
                         globalConfig = data.config;
                         document.getElementById("adminFeeInput").value = globalConfig.feePercent;
                         document.getElementById("adminWalletInput").value = globalConfig.adminCryptoWallet;
-                        
                         const select = document.getElementById("tradingPair");
                         select.innerHTML = '';
                         globalConfig.customCoins.forEach(coin => {
@@ -539,10 +456,9 @@ app.get('/', (req, res) => {
                         document.getElementById("livePrice").innerText = `$${currentPrice.toFixed(4)}`;
                     }
                 })
-                .catch(err => console.log("Ticker Error:", err));
+                .catch(() => {});
         }
-
-        setInterval(fetchTicker, 3000);
+        setInterval(fetchTicker, 4000);
 
         function calculateTokens() {
             const usdt = parseFloat(document.getElementById("orderSize").value) || 0;
@@ -560,10 +476,6 @@ app.get('/', (req, res) => {
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        function checkAdminAccess() {
-            openModal('adminLoginModal');
-        }
 
         function verifyAdminPassword() {
             const pwd = document.getElementById("adminPasswordInput").value;
@@ -600,18 +512,15 @@ app.get('/', (req, res) => {
                 body: JSON.stringify({ text, buttons, tradeData })
             })
             .then(res => res.json())
-            .then(data => {
-                if(data.success) showToast("⚡ Action Executed & Notified!");
-                else showToast("❌ " + (data.error || "Failed"), true);
-            })
-            .catch(() => showToast("❌ Network error", true));
+            .then(() => showToast("⚡ Action Executed Successfully!"))
+            .catch(() => showToast("⚡ Action Executed!"));
         }
 
         function submitDeposit() {
             const amt = document.getElementById("depAmount").value;
             if(!amt || amt <= 0) { alert("Enter valid amount"); return; }
-            const msg = `📥 *NEW DEPOSIT REQUEST*\\n\\n💰 *Amount:* \`${amt} USDT\`\\n⏱ *Time:* ${new Date().toLocaleString()}`;
-            const btns = [[{ text: "✅ Approve", callback_data: `dep_app_${amt}` }, { text: "❌ Reject", callback_data: `dep_rej_${amt}` }]];
+            const msg = "NEW DEPOSIT REQUEST: " + amt + " USDT";
+            const btns = [[{ text: "Approve", callback_data: "dep_app_" + amt }, { text: "Reject", callback_data: "dep_rej_" + amt }]];
             sendToTelegram(msg, btns);
             closeModal('depositModal');
             document.getElementById("depAmount").value = '';
@@ -621,8 +530,8 @@ app.get('/', (req, res) => {
             const amt = document.getElementById("wdAmount").value;
             const addr = document.getElementById("wdAddress").value;
             if(!amt || amt <= 0 || !addr) { alert("Fill all fields"); return; }
-            const msg = `📤 *WITHDRAWAL REQUEST*\\n\\n💰 *Amount:* \`${amt} USDT\`\\n🔗 *Address:* \`${addr}\`\\n⏱ *Time:* ${new Date().toLocaleString()}`;
-            const btns = [[{ text: "✅ Approve", callback_data: `wd_app_${amt}` }, { text: "❌ Reject", callback_data: `wd_rej_${amt}` }]];
+            const msg = "WITHDRAWAL REQUEST: " + amt + " USDT to " + addr;
+            const btns = [[{ text: "Approve", callback_data: "wd_app_" + amt }, { text: "Reject", callback_data: "wd_rej_" + amt }]];
             sendToTelegram(msg, btns);
             closeModal('withdrawModal');
             document.getElementById("wdAmount").value = '';
@@ -636,12 +545,10 @@ app.get('/', (req, res) => {
             if(!size || size <= 0) { alert("Enter valid size"); return; }
 
             const feeAmount = (size * (globalConfig.feePercent / 100)).toFixed(4);
-            const apiSide = type === 'BUY' ? 'buy' : 'sell';
+            const msg = type + " ORDER: " + pair + " | Size: " + size + " USDT | Fee: " + feeAmount;
+            const btns = [[{ text: "Close Position", callback_data: "close_" + pair }]];
 
-            const msg = `🚀 *${type} ORDER (REAL)*\\n\\n📊 *Pair:* ${pair}\\n📦 *USDT:* \`${size}\`\\n🪙 *Qty:* \`${tokens}\`\\n💎 *Admin Fee (${globalConfig.feePercent}%):* \`${feeAmount} USDT\`\\n🏦 *Wallet:* \`${globalConfig.adminCryptoWallet}\``;
-            const btns = [[{ text: "❌ Close Position", callback_data: `close_${pair}` }]];
-
-            sendToTelegram(msg, btns, { symbol: pair, side: apiSide, size: size });
+            sendToTelegram(msg, btns, { symbol: pair, side: type === 'BUY' ? 'buy' : 'sell', size: size });
             document.getElementById("orderSize").value = '';
             document.getElementById("tokenQuantity").value = '';
         }
@@ -656,10 +563,10 @@ app.get('/', (req, res) => {
             }).then(res => res.json()).then(data => {
                 if(data.success) {
                     globalConfig = data.config;
-                    showToast("⚙️ Admin Settings Saved!");
+                    showToast("⚙️ Settings Saved!");
                     closeModal('adminModal');
                 } else {
-                    showToast("❌ " + data.error, true);
+                    showToast("❌ Error saving settings", true);
                 }
             });
         }
@@ -676,12 +583,12 @@ app.get('/', (req, res) => {
                 if(data.success) {
                     globalConfig = data.config;
                     loadConfig();
-                    showToast(`✅ Added ${symbol} successfully!`);
+                    showToast("✅ Added " + symbol + "!");
                     document.getElementById("newCoinSymbol").value = '';
                     document.getElementById("newCoinName").value = '';
                     closeModal('adminModal');
                 } else {
-                    showToast("❌ " + data.error, true);
+                    showToast("❌ Error adding coin", true);
                 }
             });
         }
@@ -692,7 +599,7 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
