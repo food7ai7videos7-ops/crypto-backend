@@ -1,7 +1,7 @@
 {
   "name": "crypto-backend",
   "version": "1.0.0",
-  "description": "Crypto Exchange Backend",
+  "description": "Crypto Exchange Terminal",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
