@@ -1,14 +1,13 @@
 {
-  "name": "trade-control-center",
+  "name": "crypto-backend",
   "version": "1.0.0",
-  "description": "Spot Trading Terminal with Admin Dashboard",
+  "description": "Pro Exchanger Terminal",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "ws": "^8.16.0",
     "node-fetch": "^2.7.0"
   }
 }
