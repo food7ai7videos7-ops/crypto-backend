@@ -4,15 +4,13 @@ const https = require('https');
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Telegram Credentials
-const BOT_TOKEN = "8673427170:AAGh1Bctii6IlczxS4-mNIGlL3N-jck-T7M";
+// Aapke bilkul naye bot ka exact token
+const BOT_TOKEN = "8995508972:AAGSPih40VfiRDLsor37T5oo7fxMFQqi9Qc"; 
 const CHAT_ID = "6504370273";
 
-// Helper function to send Telegram message using native HTTPS module
 function sendTelegramMessage(text, buttons, callback) {
     const data = JSON.stringify({
         chat_id: CHAT_ID,
@@ -42,7 +40,7 @@ function sendTelegramMessage(text, buttons, callback) {
                 const parsed = JSON.parse(responseBody);
                 callback(null, parsed);
             } catch (e) {
-                callback(e, null);
+                callback(new Error("Invalid JSON response from Telegram"), null);
             }
         });
     });
@@ -55,7 +53,6 @@ function sendTelegramMessage(text, buttons, callback) {
     req.end();
 }
 
-// 1. Telegram API Endpoint
 app.post('/api/send-telegram', (req, res) => {
     const { text, buttons } = req.body;
     if (!text) {
@@ -69,15 +66,15 @@ app.post('/api/send-telegram', (req, res) => {
         }
 
         if (data && data.ok) {
-            return res.json({ success: true, message: "Message sent to Telegram successfully!" });
+            return res.json({ success: true, message: "Sent successfully!" });
         } else {
             console.error("Telegram API Error Response:", data);
-            return res.status(400).json({ success: false, error: data });
+            let errDesc = data && data.description ? data.description : "Unauthorized / Error";
+            return res.status(400).json({ success: false, error: errDesc });
         }
     });
 });
 
-// 2. Frontend HTML Route
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -238,7 +235,6 @@ app.get('/', (req, res) => {
         .btn-buy { background: var(--accent-green); color: #050B14; }
         .btn-sell { background: var(--accent-red); color: #FFF; }
 
-        /* Modal styling */
         .modal-bg {
             display: none;
             position: fixed;
@@ -273,7 +269,6 @@ app.get('/', (req, res) => {
         .dep-submit { background: var(--accent-blue); color: #050B14; }
         .wd-submit { background: var(--accent-red); color: #FFF; }
 
-        /* Toast Popup */
         .toast {
             position: fixed;
             bottom: 20px; left: 50%;
@@ -286,7 +281,9 @@ app.get('/', (req, res) => {
             font-size: 12px;
             transition: transform 0.3s ease;
             z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+        .toast.error { background: var(--accent-red); color: #FFF; }
         .toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
@@ -347,6 +344,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Deposit Modal -->
     <div id="depositModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('depositModal')">&times;</button>
@@ -359,6 +357,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Withdraw Modal -->
     <div id="withdrawModal" class="modal-bg">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal('withdrawModal')">&times;</button>
@@ -397,11 +396,16 @@ app.get('/', (req, res) => {
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        function showToast(msg) {
+        function showToast(msg, isError = false) {
             const t = document.getElementById("toast");
             t.innerText = msg;
+            if(isError) {
+                t.classList.add("error");
+            } else {
+                t.classList.remove("error");
+            }
             t.classList.add("show");
-            setTimeout(() => t.classList.remove("show"), 3000);
+            setTimeout(() => t.classList.remove("show"), 3500);
         }
 
         function sendToTelegram(text, buttons) {
@@ -413,13 +417,13 @@ app.get('/', (req, res) => {
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    showToast("✅ Sent to Telegram successfully!");
+                    showToast("✅ Sent Successfully!");
                 } else {
-                    showToast("❌ Failed: " + (data.error?.description || "Check console"));
+                    showToast("❌ " + (data.error || "Failed"), true);
                 }
             })
             .catch(err => {
-                showToast("❌ Network error connecting to backend!");
+                showToast("❌ Network error connecting to backend!", true);
             });
         }
 
@@ -462,7 +466,6 @@ app.get('/', (req, res) => {
             const btns = [[{ text: "❌ Close Position", callback_data: \`close_\${pair}\` }]];
 
             sendToTelegram(msg, btns);
-            showToast(\`🚀 \${type} Order Sent to Telegram!\`);
             document.getElementById("orderSize").value = '';
             document.getElementById("takeProfit").value = '';
             document.getElementById("stopLoss").value = '';
@@ -472,7 +475,6 @@ app.get('/', (req, res) => {
 </html>`);
 });
 
-// Server Listen
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
