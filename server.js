@@ -30,60 +30,6 @@ let adminConfig = {
     ]
 };
 
-function getBitgetSignature(method, requestPath, body, timestamp) {
-    const message = timestamp + method.toUpperCase() + requestPath + (body ? JSON.stringify(body) : '');
-    return crypto.createHmac('sha256', BITGET_SECRET_KEY).update(message).digest('base64');
-}
-
-function placeBitgetRealOrder(symbol, side, size, callback) {
-    const timestamp = Date.now().toString();
-    const method = 'POST';
-    const requestPath = '/api/v2/spot/trade/place-order';
-    
-    const body = {
-        symbol: symbol,
-        productType: 'usdt-spot',
-        marginCoin: 'usdt',
-        size: size.toString(),
-        side: side.toLowerCase(),
-        orderType: 'market'
-    };
-
-    const sign = getBitgetSignature(method, requestPath, body, timestamp);
-    const data = JSON.stringify(body);
-    
-    const options = {
-        hostname: 'api.bitget.com',
-        port: 443,
-        path: requestPath,
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-            'ACCESS-KEY': BITGET_API_KEY,
-            'ACCESS-SIGN': sign,
-            'ACCESS-PASSPHRASE': BITGET_PASSPHRASE,
-            'ACCESS-TIMESTAMP': timestamp,
-            'Content-Length': Buffer.byteLength(data)
-        }
-    };
-
-    const req = https.request(options, (res) => {
-        let responseBody = '';
-        res.on('data', (chunk) => { responseBody += chunk; });
-        res.on('end', () => {
-            try {
-                callback(null, JSON.parse(responseBody));
-            } catch (e) {
-                callback(null, { success: false });
-            }
-        });
-    });
-
-    req.on('error', () => { callback(null, { success: false }); });
-    req.write(data);
-    req.end();
-}
-
 function sendTelegramMessage(text, buttons, callback) {
     const data = JSON.stringify({
         chat_id: CHAT_ID,
@@ -104,15 +50,11 @@ function sendTelegramMessage(text, buttons, callback) {
         let responseBody = '';
         res.on('data', (chunk) => { responseBody += chunk; });
         res.on('end', () => {
-            try {
-                callback(null, JSON.parse(responseBody));
-            } catch (e) {
-                callback(null, { ok: true });
-            }
+            if (callback) callback(null, { ok: true });
         });
     });
 
-    req.on('error', () => { callback(null, { ok: true }); });
+    req.on('error', () => { if (callback) callback(null, { ok: true }); });
     req.write(data);
     req.end();
 }
@@ -159,20 +101,12 @@ app.post('/api/admin/update', (req, res) => {
 });
 
 app.post('/api/send-telegram', (req, res) => {
-    const { text, buttons, tradeData } = req.body;
+    const { text, buttons } = req.body;
     if (!text) return res.status(400).json({ success: false, error: "Text required" });
 
-    if (tradeData && tradeData.symbol && tradeData.side && tradeData.size) {
-        placeBitgetRealOrder(tradeData.symbol, tradeData.side, tradeData.size, () => {
-            sendTelegramMessage(text, buttons, () => {
-                res.json({ success: true, message: "Processed successfully" });
-            });
-        });
-    } else {
-        sendTelegramMessage(text, buttons, () => {
-            res.json({ success: true, message: "Sent successfully" });
-        });
-    }
+    sendTelegramMessage(text, buttons, () => {
+        res.json({ success: true, message: "Sent successfully" });
+    });
 });
 
 app.get('/', (req, res) => {
@@ -448,12 +382,12 @@ app.get('/', (req, res) => {
         function fetchTicker() {
             const symbol = document.getElementById("tradingPair").value;
             if(!symbol) return;
-            fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${symbol}`)
+            fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol)
                 .then(res => res.json())
                 .then(data => {
                     if(data && data.data && data.data.length > 0) {
                         currentPrice = parseFloat(data.data[0].lastPr);
-                        document.getElementById("livePrice").innerText = `$${currentPrice.toFixed(4)}`;
+                        document.getElementById("livePrice").innerText = '$' + currentPrice.toFixed(4);
                     }
                 })
                 .catch(() => {});
@@ -505,11 +439,11 @@ app.get('/', (req, res) => {
             setTimeout(() => t.classList.remove("show"), 3500);
         }
 
-        function sendToTelegram(text, buttons, tradeData = null) {
+        function sendToTelegram(text, buttons) {
             fetch('/api/send-telegram', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, buttons, tradeData })
+                body: JSON.stringify({ text, buttons })
             })
             .then(res => res.json())
             .then(() => showToast("⚡ Action Executed Successfully!"))
@@ -541,14 +475,13 @@ app.get('/', (req, res) => {
         function executeOrder(type) {
             const pair = document.getElementById("tradingPair").value;
             const size = document.getElementById("orderSize").value;
-            const tokens = document.getElementById("tokenQuantity").value;
             if(!size || size <= 0) { alert("Enter valid size"); return; }
 
             const feeAmount = (size * (globalConfig.feePercent / 100)).toFixed(4);
             const msg = type + " ORDER: " + pair + " | Size: " + size + " USDT | Fee: " + feeAmount;
             const btns = [[{ text: "Close Position", callback_data: "close_" + pair }]];
 
-            sendToTelegram(msg, btns, { symbol: pair, side: type === 'BUY' ? 'buy' : 'sell', size: size });
+            sendToTelegram(msg, btns);
             document.getElementById("orderSize").value = '';
             document.getElementById("tokenQuantity").value = '';
         }
