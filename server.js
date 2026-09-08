@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // In-Memory System State
 let db = {
@@ -22,7 +21,12 @@ let db = {
     activity: []
 };
 
-// Helper for Bitget API Signature (Master API used for all user trades)
+// Serve index.html directly on root /
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Helper for Bitget API Signature
 function sign(timestamp, method, requestPath, body, secret) {
     const message = timestamp + method + requestPath + body;
     return crypto.createHmac('sha256', secret).update(message).digest('base64');
@@ -33,7 +37,7 @@ app.get('/api/state', (req, res) => {
     res.json(db);
 });
 
-// API: Admin Login & Settings Update
+// API: Admin Settings
 app.post('/api/admin/settings', (req, res) => {
     const { password, apiKey, apiSecret, apiPassphrase, newPassword } = req.body;
     if (password !== db.adminPassword) {
@@ -43,35 +47,35 @@ app.post('/api/admin/settings', (req, res) => {
     if (apiSecret) db.apiSecret = apiSecret;
     if (apiPassphrase) db.apiPassphrase = apiPassphrase;
     if (newPassword) db.adminPassword = newPassword;
-    res.json({ success: true, message: 'Settings updated successfully' });
+    res.json({ success: true, message: 'Settings updated successfully ⚙️' });
 });
 
 // API: Deposit Request
 app.post('/api/deposit', (req, res) => {
     const { amount } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount ❌' });
     
     db.deposits.push({ id: Date.now(), amount: Number(amount), status: 'Pending' });
-    db.activity.unshift(`[Deposit Requested] +$${amount} USDT awaiting approval.`);
-    res.json({ success: true, message: 'Deposit request submitted! Awaiting admin approval.' });
+    db.activity.unshift(`[Deposit Requested] +$${amount} USDT awaiting approval ⏳.`);
+    res.json({ success: true, message: 'Deposit request submitted successfully! 📥' });
 });
 
-// API: Withdrawal Request (Fixed to show in Admin Panel)
+// API: Withdrawal Request
 app.post('/api/withdraw', (req, res) => {
     const { amount, address } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
-    if (db.balance < amount) return res.status(400).json({ error: 'Insufficient balance' });
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount ❌' });
+    if (db.balance < amount) return res.status(400).json({ error: 'Insufficient balance ⚠️' });
 
     db.balance -= Number(amount);
     db.withdrawals.push({ id: Date.now(), amount: Number(amount), address, status: 'Pending' });
-    db.activity.unshift(`[Withdrawal Requested] -$${amount} USDT to ${address}.`);
-    res.json({ success: true, balance: db.balance, message: 'Withdrawal request submitted successfully.' });
+    db.activity.unshift(`[Withdrawal Requested] -$${amount} USDT to ${address} 📤.`);
+    res.json({ success: true, balance: db.balance, message: 'Withdrawal request submitted successfully! ✅' });
 });
 
-// API: Admin Actions (Approve/Reject Deposits & Withdrawals)
+// API: Admin Actions
 app.post('/api/admin/action', (req, res) => {
     const { password, id, type, action } = req.body;
-    if (password !== db.adminPassword) return res.status(401).json({ error: 'Unauthorized' });
+    if (password !== db.adminPassword) return res.status(401).json({ error: 'Unauthorized 🔒' });
 
     if (type === 'deposit') {
         const item = db.deposits.find(d => d.id == id);
@@ -79,7 +83,7 @@ app.post('/api/admin/action', (req, res) => {
             item.status = action === 'approve' ? 'Approved' : 'Rejected';
             if (action === 'approve') {
                 db.balance += item.amount;
-                db.activity.unshift(`[Deposit Approved] +$${item.amount} USDT added.`);
+                db.activity.unshift(`[Deposit Approved] +$${item.amount} USDT added ✔️.`);
             }
         }
     } else if (type === 'withdrawal') {
@@ -87,26 +91,25 @@ app.post('/api/admin/action', (req, res) => {
         if (item && item.status === 'Pending') {
             item.status = action === 'approve' ? 'Approved' : 'Rejected';
             if (action === 'reject') {
-                db.balance += item.amount; // Refund if rejected
-                db.activity.unshift(`[Withdrawal Rejected] Refunded $${item.amount} USDT.`);
+                db.balance += item.amount;
+                db.activity.unshift(`[Withdrawal Rejected] Refunded $${item.amount} USDT 🔄.`);
             } else {
-                db.activity.unshift(`[Withdrawal Approved] Sent $${item.amount} USDT.`);
+                db.activity.unshift(`[Withdrawal Approved] Sent $${item.amount} USDT 🚀.`);
             }
         }
     }
     res.json({ success: true, db });
 });
 
-// API: Execute Trade (Direct for any User without needing their own API keys)
+// API: Execute Trade
 app.post('/api/trade', async (req, res) => {
     const { symbol, side, size, price } = req.body;
     const cost = size * price;
 
     if (side === 'BUY' && db.balance < cost) {
-        return res.status(400).json({ error: 'Insufficient balance for this trade' });
+        return res.status(400).json({ error: 'Insufficient balance for this trade ⚠️' });
     }
 
-    // If master API keys are configured, execute real Bitget order in background
     if (db.apiKey && db.apiSecret && db.apiPassphrase) {
         try {
             const timestamp = Date.now().toString();
@@ -120,7 +123,6 @@ app.post('/api/trade', async (req, res) => {
             });
             const signature = sign(timestamp, 'POST', '/api/v2/mix/order/place-order', body, db.apiSecret);
             
-            // Background call to Bitget (won't block user if offline/invalid, but executes if valid)
             await fetch('https://api.bitget.com/api/v2/mix/order/place-order', {
                 method: 'POST',
                 headers: {
@@ -137,7 +139,6 @@ app.post('/api/trade', async (req, res) => {
         }
     }
 
-    // Update simulation state smoothly for user
     if (side === 'BUY') {
         db.balance -= cost;
         db.holdings += Number(size);
@@ -147,9 +148,9 @@ app.post('/api/trade', async (req, res) => {
         db.holdings = Math.max(0, db.holdings - Number(size));
     }
 
-    db.activity.unshift(`[Trade] ${side} ${symbol} executed! Fee: $0.0000`);
+    db.activity.unshift(`[Trade] ${side} ${symbol} executed successfully! 📈`);
     res.json({ success: true, balance: db.balance, holdings: db.holdings, avgPrice: db.avgPrice });
-}); 
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT} 🚀`));
