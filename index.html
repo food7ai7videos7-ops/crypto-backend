@@ -3,286 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Exchanger Terminal</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0b0e11; color: #eaecef; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
-        header { display: flex; justify-content: space-between; align-items: center; background: #181a20; padding: 12px 15px; border-radius: 8px; border: 1px solid #22252a; }
-        .logo { font-weight: bold; color: #f0b90b; font-size: 16px; display: flex; align-items: center; gap: 6px; }
-        .nav-btns { display: flex; gap: 8px; }
-        .nav-btn { background: #2b313a; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
-        .nav-btn:hover { background: #363c4e; }
-        .card { background: #181a20; padding: 15px; border-radius: 8px; border: 1px solid #22252a; }
-        .wallet-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #848e9c; }
-        .wallet-val { font-size: 20px; font-weight: bold; color: #eaecef; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 11px; color: #848e9c; margin-bottom: 4px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; background: #0b0e11; border: 1px solid #22252a; color: white; border-radius: 4px; font-size: 14px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; text-align: center; }
-        .btn-buy { background: #0ecb81; color: white; }
-        .btn-sell { background: #f6465d; color: white; }
-        .btn-action { background: #f0b90b; color: #0b0e11; width: 100%; margin-top: 5px; }
-        .activity-box { background: #0b0e11; padding: 10px; border-radius: 4px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #0ecb81; border: 1px solid #22252a; }
-        /* Modals */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; padding: 20px; }
-        .modal-content { background: #181a20; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; border: 1px solid #22252a; }
-        .close-link { display: block; text-align: center; margin-top: 10px; color: #848e9c; cursor: pointer; font-size: 12px; }
-    </style>
+    <title>Crypto Hub & Trading Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-black text-white font-sans antialiased">
 
-    <div class="container">
-        <header>
-            <div class="logo"><span style="color:#0ecb81">●</span> PRO EXCHANGER</div>
-            <div class="nav-btns">
-                <button class="nav-btn" onclick="openModal('depositModal')">Deposit</button>
-                <button class="nav-btn" onclick="openModal('withdrawModal')">Withdraw</button>
-                <button class="nav-btn" onclick="openModal('adminModal')">Admin</button>
+    <!-- Top Navigation -->
+    <header class="bg-gray-950 border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-yellow-500 font-extrabold text-lg tracking-wider">CRYPTO HUB</span>
             </div>
-        </header>
-
-        <!-- Wallet Card -->
-        <div class="card">
-            <div style="display: flex; justify-content: space-between;">
-                <div>
-                    <div class="wallet-row">USDT BALANCE</div>
-                    <div class="wallet-val" id="ui-balance">$0.00</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="wallet-row">HOLDINGS</div>
-                    <div class="wallet-val" id="ui-holdings" style="font-size: 16px; color: #0ecb81;">0.00</div>
-                </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-xs text-gray-400 font-mono bg-gray-900 px-2 py-1 rounded border border-gray-800">UID: <span id="userUniqueIdDisplay" class="text-white font-bold">Loading...</span></span>
+                <button onclick="openAdminSecurityModal()" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs px-3 py-1.5 rounded font-bold transition">Admin Panel</button>
             </div>
-            <div style="margin-top: 10px; font-size: 12px; color: #848e9c;">AVG ENTRY PRICE: <span id="ui-avg" style="color: white;">$0.00</span></div>
         </div>
+    </header>
 
-        <!-- Trading Card -->
-        <div class="card">
-            <div class="form-group">
-                <label>TRADING PAIR (LIVE BITGET)</label>
-                <select id="trading-pair" onchange="fetchPrice()">
-                    <option value="XRP/USDT">XRP/USDT</option>
-                    <option value="BTC/USDT">BTC/USDT</option>
-                    <option value="ETH/USDT">ETH/USDT</option>
-                </select>
-            </div>
-            <div style="margin: 10px 0; font-size: 14px; color: #848e9c;">LIVE BITGET PRICE: <span id="ui-price" style="font-size: 18px; font-weight: bold; color: white;">$0.00</span></div>
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left & Center: Markets & Trading Section -->
+        <div class="lg:col-span-2 space-y-6">
             
-            <div class="form-group">
-                <label>ORDER SIZE (USDT OR COIN QTY)</label>
-                <input type="number" id="trade-size" placeholder="Enter amount">
-            </div>
-
-            <div class="btn-group">
-                <button class="btn btn-buy" onclick="executeTrade('BUY')">BUY</button>
-                <button class="btn btn-sell" onclick="executeTrade('SELL')">SELL</button>
-            </div>
-        </div>
-
-        <!-- Activity Stream -->
-        <div class="card">
-            <div class="wallet-row" style="margin-bottom: 5px;">ACTIVITY STREAM</div>
-            <div class="activity-box" id="activity-log">Loading stream...</div>
-        </div>
-    </div>
-
-    <!-- Deposit Modal -->
-    <div class="modal" id="depositModal">
-        <div class="modal-content">
-            <h3>Deposit USDT</h3>
-            <p style="font-size: 12px; color: #848e9c; margin: 10px 0;">SEND USDT VIA TRC20 NETWORK:<br><strong style="color:white; word-break:break-all;">0x71C7656EC7A88098DEF751B7401B5F6d89B5</strong></p>
-            <div class="form-group">
-                <label>DEPOSITED AMOUNT ($)</label>
-                <input type="number" id="dep-amount" placeholder="Enter amount">
-            </div>
-            <button class="btn btn-action" onclick="submitDeposit()">Submit Deposit Request</button>
-            <span class="close-link" onclick="closeModal('depositModal')">Cancel</span>
-        </div>
-    </div>
-
-    <!-- Withdraw Modal -->
-    <div class="modal" id="withdrawModal">
-        <div class="modal-content">
-            <h3>Withdraw USDT</h3>
-            <div class="form-group" style="margin-top:10px;">
-                <label>AMOUNT ($)</label>
-                <input type="number" id="wd-amount" placeholder="Amount">
-            </div>
-            <div class="form-group">
-                <label>USDT TRC20 ADDRESS</label>
-                <input type="text" id="wd-address" placeholder="T... address">
-            </div>
-            <button class="btn btn-action" onclick="submitWithdraw()">Request Withdrawal</button>
-            <span class="close-link" onclick="closeModal('withdrawModal')">Cancel</span>
-        </div>
-    </div>
-
-    <!-- Admin Panel Modal -->
-    <div class="modal" id="adminModal">
-        <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
-            <h3>Admin Control Panel</h3>
-            <div id="admin-login-sec" style="margin-top: 15px;">
-                <div class="form-group">
-                    <label>ADMIN PASSWORD</label>
-                    <input type="password" id="admin-pass" placeholder="Password">
+            <!-- Balance & Actions Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <span class="text-gray-400 text-xs uppercase tracking-wider block">Total Balance</span>
+                        <h2 id="userBalance" class="text-2xl font-extrabold text-yellow-400 mt-0.5">$0.00</h2>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="openDepositModal()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs px-4 py-2 rounded-lg transition">Deposit</button>
+                        <button onclick="openWithdrawModal()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition border border-gray-700">Withdraw</button>
+                    </div>
                 </div>
-                <button class="btn btn-action" onclick="loadAdminPanel()">Login Admin Panel</button>
+                <!-- Holdings preview -->
+                <div class="border-t border-gray-800 pt-3">
+                    <span class="text-gray-400 text-[11px] uppercase tracking-wider block mb-1">My Assets</span>
+                    <div id="userHoldings" class="text-xs text-gray-400">No holdings available</div>
+                </div>
             </div>
-            <div id="admin-dashboard-sec" style="display:none; margin-top: 15px;">
-                <h4 style="color:#0ecb81; margin-bottom:10px;">API SETTINGS</h4>
-                <div class="form-group"><label>API KEY</label><input type="text" id="set-key"></div>
-                <div class="form-group"><label>API SECRET</label><input type="text" id="set-sec"></div>
-                <div class="form-group"><label>PASSPHRASE</label><input type="text" id="set-pass"></div>
-                <button class="btn btn-action" onclick="saveSettings()">Save Settings</button>
 
-                <h4 style="color:#0ecb81; margin: 15px 0 10px 0;">PENDING DEPOSITS</h4>
-                <div id="admin-deposits">None</div>
+            <!-- Active Trading Terminal -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
+                    <div>
+                        <span id="activeTradingSymbol" class="text-base font-bold text-white">BTCUSDT</span>
+                        <span id="activeTradingPrice" class="text-xs text-yellow-400 font-mono block">$78,648.01</span>
+                    </div>
+                    <span class="text-xs bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded font-mono">Spot Live</span>
+                </div>
 
-                <h4 style="color:#0ecb81; margin: 15px 0 10px 0;">PENDING WITHDRAWALS</h4>
-                <div id="admin-withdrawals">None</div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Trade Amount (USDT)</label>
+                        <input type="number" id="tradeAmountInput" placeholder="0.00" class="w-full bg-black border border-gray-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-yellow-500 font-mono">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="executeTrade('buy')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow">Buy / Long</button>
+                        <button onclick="executeTrade('sell')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow">Sell / Short</button>
+                    </div>
+                </div>
             </div>
-            <span class="close-link" onclick="closeModal('adminModal')">Close Panel</span>
+
+            <!-- Markets List -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Markets</h3>
+                    <input type="text" id="marketSearch" placeholder="Search coin..." class="bg-black border border-gray-800 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-yellow-500 w-36">
+                </div>
+                <div id="marketsListContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Side: Deposit Info & Instructions -->
+        <div class="space-y-6">
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-3 pb-2 border-b border-gray-800">Deposit Instructions</h3>
+                <div id="depositInstructions" class="text-xs space-y-2 text-gray-300">
+                    <p class="text-gray-500">Loading payment channels...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Admin Panel (Hidden by default) -->
+    <div id="adminPanel" style="display: none;" class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-gray-900 border border-yellow-600/50 rounded-xl p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-800">
+                <h2 class="text-lg font-extrabold text-yellow-400">ADMIN CONTROL PANEL</h2>
+                <button onclick="closeAdminPanel()" class="text-gray-400 hover:text-white text-xs font-bold bg-gray-800 px-3 py-1 rounded">Close Panel</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Config Settings -->
+                <div class="space-y-4 bg-black/40 p-4 rounded-lg border border-gray-800">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500">Payment & Fees Settings</h3>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">TRC20 Address</label>
+                        <input type="text" id="depositAddressInput" class="w-full bg-black border border-gray-800 rounded p-2 text-xs text-white focus:border-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">EasyPaisa / JazzCash Details</label>
+                        <input type="text" id="depositDetailsInput" class="w-full bg-black border border-gray-800 rounded p-2 text-xs text-white focus:border-yellow-500">
+                    </div>
+                    <button onclick="saveDepositInfo()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold py-2 rounded transition">Save Info</button>
+                </div>
+
+                <!-- Pending Deposits -->
+                <div class="space-y-2 bg-black/40 p-4 rounded-lg border border-gray-800">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-2">Pending Deposits</h3>
+                    <div id="pendingDeposits" class="space-y-2 max-h-48 overflow-y-auto">
+                        <span class="text-gray-500 text-[11px]">No pending deposits</span>
+                    </div>
+                </div>
+
+                <!-- Pending Withdrawals -->
+                <div class="space-y-2 bg-black/40 p-4 rounded-lg border border-gray-800">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-2">Pending Withdrawals</h3>
+                    <div id="pendingWithdrawals" class="space-y-2 max-h-48 overflow-y-auto">
+                        <span class="text-gray-500 text-[11px]">No pending withdrawals</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Modals -->
+    <div id="depositModal" style="display: none;" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 w-full max-w-sm space-y-4">
+            <h3 class="text-sm font-bold text-white uppercase">Deposit Funds</h3>
+            <input type="number" id="depositAmountInput" placeholder="Enter amount in USDT" class="w-full bg-black border border-gray-800 rounded p-2.5 text-xs text-white focus:border-yellow-500 font-mono">
+            <div class="flex space-x-2">
+                <button onclick="submitDepositRequest()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold py-2 rounded">Submit Request</button>
+                <button onclick="closeDepositModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 rounded">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="withdrawModal" style="display: none;" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 w-full max-w-sm space-y-4">
+            <h3 class="text-sm font-bold text-white uppercase">Withdraw Funds</h3>
+            <input type="number" id="withdrawAddressInput" placeholder="Enter withdrawal amount" class="w-full bg-black border border-gray-800 rounded p-2.5 text-xs text-white focus:border-yellow-500 font-mono">
+            <div class="flex space-x-2">
+                <button onclick="submitWithdrawRequest()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold py-2 rounded">Submit Request</button>
+                <button onclick="closeWithdrawModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 rounded">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminSecurityModal" style="display: none;" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 w-full max-w-sm space-y-4">
+            <h3 class="text-sm font-bold text-yellow-400 uppercase">Admin Access Security</h3>
+            <input type="password" id="adminPasswordInput" placeholder="Enter Admin Password" class="w-full bg-black border border-gray-800 rounded p-2.5 text-xs text-white focus:border-yellow-500">
+            <div class="flex space-x-2">
+                <button onclick="verifyAdminPanelPassword()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold py-2 rounded">Login</button>
+                <button onclick="closeAdminSecurityModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold py-2 rounded">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frontend Script for API Sync -->
     <script>
-        let currentPrice = 1.38;
+        const allMarketPairs = [
+            { symbol: 'BTCUSDT', price: 78648.01, change: -0.34 },
+            { symbol: 'ETHUSDT', price: 2488.91, change: +0.10 },
+            { symbol: 'SOLUSDT', price: 184.50, change: +2.45 },
+            { symbol: 'XRPUSDT', price: 2.14, change: +1.20 },
+            { symbol: 'BNBUSDT', price: 749.56, change: +0.88 },
+            { symbol: 'DOGEUSDT', price: 0.22, change: -1.15 },
+            { symbol: 'PEPEUSDT', price: 0.000014, change: +5.40 },
+            { symbol: 'ADAUSDT', price: 0.85, change: -0.45 },
+            { symbol: 'TRXUSDT', price: 0.24, change: +0.15 }
+        ];
 
-        async function fetchPrice() {
-            const pair = document.getElementById('trading-pair').value;
+        function getOrCreateUserId() {
+            let userId = localStorage.getItem("crypto_hub_unique_uid");
+            if (!userId) {
+                userId = "UID-" + Math.floor(10000000 + Math.random() * 90000000);
+                localStorage.setItem("crypto_hub_unique_uid", userId);
+            }
+            return userId;
+        }
+
+        async function fetchServerState() {
             try {
-                const res = await fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${pair.replace('/', '')}`);
-                const data = await res.json();
-                if(data.data && data.data[0]) {
-                    currentPrice = parseFloat(data.data[0].lastPr);
-                    document.getElementById('ui-price').innerText = '$' + currentPrice.toFixed(4);
+                const res = await fetch('/api/state');
+                const json = await res.json();
+                if (json.success) {
+                    updateUI(json.data);
                 }
-            } catch(e) { console.log(e); }
-        }
-
-        async function loadState() {
-            const res = await fetch('/api/state');
-            const data = await res.json();
-            document.getElementById('ui-balance').innerText = '$' + data.balance.toFixed(4);
-            document.getElementById('ui-holdings').innerText = data.holdings.toFixed(4);
-            document.getElementById('ui-avg').innerText = '$' + data.avgPrice.toFixed(4);
-
-            let logHtml = '';
-            data.activity.forEach(act => { logHtml += `<div>${act}</div>`; });
-            document.getElementById('activity-log').innerHTML = logHtml || 'No activity yet.';
-        }
-
-        async function executeTrade(side) {
-            const size = document.getElementById('trade-size').value;
-            const symbol = document.getElementById('trading-pair').value;
-            if(!size || size <= 0) return alert('Enter valid amount');
-
-            const res = await fetch('/api/trade', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ symbol, side, size, price: currentPrice })
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert('Success! Trade executed successfully.');
-                loadState();
-            } else {
-                alert(data.error);
+            } catch (e) {
+                console.log("Syncing with server...");
             }
         }
 
-        async function submitDeposit() {
-            const amount = document.getElementById('dep-amount').value;
+        document.addEventListener("DOMContentLoaded", () => {
+            const myId = getOrCreateUserId();
+            document.getElementById("userUniqueIdDisplay").innerText = myId;
+            renderMarkets(allMarketPairs);
+            setupSearch();
+            fetchServerState();
+            setInterval(fetchServerState, 3000);
+        });
+
+        function updateUI(data) {
+            const myId = getOrCreateUserId();
+            const userBal = data.balances && data.balances[myId] ? data.balances[myId] : 0;
+            document.getElementById("userBalance").innerText = `$${parseFloat(userBal).toFixed(2)}`;
+
+            const holdingsEl = document.getElementById("userHoldings");
+            if (userBal > 0) {
+                holdingsEl.innerHTML = `<div class="flex justify-between items-center text-xs py-1"><span class="text-white font-bold">USDT</span><span class="text-yellow-400">$${parseFloat(userBal).toFixed(2)}</span></div>`;
+            } else {
+                holdingsEl.innerHTML = `No holdings available`;
+            }
+
+            document.getElementById("depositInstructions").innerHTML = `
+                <strong class="text-yellow-400 block mb-1">USDT Address (TRC20):</strong>
+                <span class="text-white break-all">${data.config.trc20 || 'Not set'}</span>
+                <strong class="text-yellow-400 block mt-2 mb-1">Payment Details:</strong>
+                <span class="text-white">${data.config.details || 'Not set'}</span>
+            `;
+
+            const adminPanel = document.getElementById("adminPanel");
+            if (adminPanel.style.display === 'block') {
+                const addrIn = document.getElementById("depositAddressInput");
+                const detIn = document.getElementById("depositDetailsInput");
+                if (document.activeElement !== addrIn && !addrIn.value) addrIn.value = data.config.trc20 || '';
+                if (document.activeElement !== detIn && !detIn.value) detIn.value = data.config.details || '';
+
+                document.getElementById("pendingDeposits").innerHTML = data.deposits && data.deposits.length > 0
+                    ? data.deposits.map((d, i) => `
+                        <div class="flex justify-between items-center bg-black/60 p-2 rounded border border-gray-800 text-xs">
+                            <div><span class="text-white font-bold">${d.amount} USDT</span><span class="text-yellow-400 block font-mono text-[10px]">${d.userId}</span></div>
+                            <div class="space-x-1">
+                                <button onclick="adminAction('deposit', 'approve', ${i})" class="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold">Approve</button>
+                                <button onclick="adminAction('deposit', 'reject', ${i})" class="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold">Reject</button>
+                            </div>
+                        </div>`).join('')
+                    : `<span class="text-gray-500 text-[11px]">No pending deposits</span>`;
+
+                document.getElementById("pendingWithdrawals").innerHTML = data.withdrawals && data.withdrawals.length > 0
+                    ? data.withdrawals.map((w, i) => `
+                        <div class="flex justify-between items-center bg-black/60 p-2 rounded border border-gray-800 text-xs">
+                            <div><span class="text-white font-bold">${w.amount} USDT</span><span class="text-yellow-400 block font-mono text-[10px]">${w.userId}</span></div>
+                            <div class="space-x-1">
+                                <button onclick="adminAction('withdrawal', 'approve', ${i})" class="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold">Approve</button>
+                                <button onclick="adminAction('withdrawal', 'reject', ${i})" class="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold">Reject</button>
+                            </div>
+                        </div>`).join('')
+                    : `<span class="text-gray-500 text-[11px]">No pending withdrawals</span>`;
+            }
+        }
+
+        async function saveDepositInfo() {
+            const trc20 = document.getElementById("depositAddressInput").value;
+            const details = document.getElementById("depositDetailsInput").value;
+            const password = prompt("Enter Admin Password to save:");
+            
+            const res = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trc20, details, password })
+            });
+            const json = await res.json();
+            if (json.success) { alert("Settings saved successfully!"); fetchServerState(); }
+            else { alert(json.message); }
+        }
+
+        async function submitDepositRequest() {
+            const amount = document.getElementById("depositAmountInput").value;
+            const userId = getOrCreateUserId();
             const res = await fetch('/api/deposit', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ amount })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, userId })
             });
-            const data = await res.json();
-            alert(data.message || data.error);
-            closeModal('depositModal');
-            loadState();
+            const json = await res.json();
+            if (json.success) { alert("Deposit request sent!"); closeDepositModal(); fetchServerState(); }
         }
 
-        async function submitWithdraw() {
-            const amount = document.getElementById('wd-amount').value;
-            const address = document.getElementById('wd-address').value;
+        async function submitWithdrawRequest() {
+            const amount = document.getElementById("withdrawAddressInput").value;
+            const userId = getOrCreateUserId();
             const res = await fetch('/api/withdraw', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ amount, address })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, userId })
             });
-            const data = await res.json();
-            if(data.success) {
-                alert(data.message);
-                closeModal('withdrawModal');
-                loadState();
+            const json = await res.json();
+            if (json.success) { alert("Withdrawal request sent!"); closeWithdrawModal(); fetchServerState(); }
+            else { alert(json.message); }
+        }
+
+        async function adminAction(type, action, index) {
+            const password = prompt("Enter Admin Password:");
+            const res = await fetch('/api/admin/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, action, index, password })
+            });
+            const json = await res.json();
+            if (json.success) { fetchServerState(); }
+            else { alert(json.message); }
+        }
+
+        function renderMarkets(pairs) {
+            document.getElementById("marketsListContainer").innerHTML = pairs.map(c => `
+                <div onclick="selectPair('${c.symbol}', ${c.price})" class="flex justify-between items-center p-2 bg-black rounded border border-gray-800 cursor-pointer hover:border-yellow-500">
+                    <span class="text-xs font-bold text-white">${c.symbol}</span>
+                    <div class="text-right"><span class="text-xs text-white">${c.price.toFixed(4)}</span><span class="text-[10px] ${c.change >= 0 ? 'text-green-400' : 'text-red-400'} block">${c.change >= 0 ? '+' : ''}${c.change}%</span></div>
+                </div>`).join('');
+        }
+
+        function setupSearch() {
+            document.getElementById("marketSearch").addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase();
+                renderMarkets(allMarketPairs.filter(c => c.symbol.toLowerCase().includes(q)));
+            });
+        }
+
+        function selectPair(symbol, price) {
+            document.getElementById("activeTradingSymbol").innerText = symbol;
+            document.getElementById("activeTradingPrice").innerText = `$${price.toFixed(4)}`;
+        }
+
+        function executeTrade(side) {
+            const amount = document.getElementById("tradeAmountInput").value;
+            if (!amount || amount <= 0) { alert("Enter valid trade amount"); return; }
+            alert(`Trade (${side.toUpperCase()}) executed for $${amount}`);
+            document.getElementById("tradeAmountInput").value = '';
+        }
+
+        function verifyAdminPanelPassword() {
+            if (document.getElementById("adminPasswordInput").value === "Mmooossaa35") {
+                closeAdminSecurityModal();
+                document.getElementById("adminPanel").style.display = 'block';
+                document.getElementById("adminPasswordInput").value = '';
+                document.getElementById("adminPanel").scrollIntoView({ behavior: 'smooth' });
+                fetchServerState();
             } else {
-                alert(data.error);
+                alert("Incorrect Password!");
             }
         }
 
-        async function loadAdminPanel() {
-            const password = document.getElementById('admin-pass').value;
-            const res = await fetch('/api/state');
-            const data = await res.json();
-            
-            // Simple verification check via settings save test or passing pass
-            document.getElementById('admin-login-sec').style.display = 'none';
-            document.getElementById('admin-dashboard-sec').style.display = 'block';
-
-            document.getElementById('set-key').value = data.apiKey || '';
-            document.getElementById('set-sec').value = data.apiSecret || '';
-            document.getElementById('set-pass').value = data.apiPassphrase || '';
-
-            let depHtml = '';
-            data.deposits.filter(d => d.status === 'Pending').forEach(d => {
-                depHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;"><span>+$${d.amount} USDT</span> <button onclick="adminAction(${d.id}, 'deposit', 'approve')" style="background:#0ecb81;border:none;color:white;padding:2px 8px;border-radius:3px;">Approve</button></div>`;
-            });
-            document.getElementById('admin-deposits').innerHTML = depHtml || 'No pending deposits.';
-
-            let wdHtml = '';
-            data.withdrawals.filter(w => w.status === 'Pending').forEach(w => {
-                wdHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;"><span>-$${w.amount} USDT</span> <button onclick="adminAction(${w.id}, 'withdrawal', 'approve')" style="background:#0ecb81;border:none;color:white;padding:2px 8px;border-radius:3px;">Approve</button></div>`;
-            });
-            document.getElementById('admin-withdrawals').innerHTML = wdHtml || 'No pending withdrawals.';
-        }
-
-        async function adminAction(id, type, action) {
-            const password = document.getElementById('admin-pass').value;
-            const res = await fetch('/api/admin/action', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ password, id, type, action })
-            });
-            alert('Action completed!');
-            loadAdminPanel();
-            loadState();
-        }
-
-        async function saveSettings() {
-            const password = document.getElementById('admin-pass').value;
-            const apiKey = document.getElementById('set-key').value;
-            const apiSecret = document.getElementById('set-sec').value;
-            const apiPassphrase = document.getElementById('set-pass').value;
-
-            const res = await fetch('/api/admin/settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ password, apiKey, apiSecret, apiPassphrase })
-            });
-            const data = await res.json();
-            alert(data.message || data.error);
-        }
-
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        setInterval(fetchPrice, 3000);
-        fetchPrice();
-        loadState();
+        function openDepositModal() { document.getElementById("depositModal").style.display = 'flex'; }
+        function closeDepositModal() { document.getElementById("depositModal").style.display = 'none'; }
+        function openWithdrawModal() { document.getElementById("withdrawModal").style.display = 'flex'; }
+        function closeWithdrawModal() { document.getElementById("withdrawModal").style.display = 'none'; }
+        function openAdminSecurityModal() { document.getElementById("adminSecurityModal").style.display = 'flex'; }
+        function closeAdminSecurityModal() { document.getElementById("adminSecurityModal").style.display = 'none'; }
+        function closeAdminPanel() { document.getElementById("adminPanel").style.display = 'none'; }
     </script>
 </body>
 </html>
