@@ -1,16 +1,19 @@
 {
-  "name": "crypto-trading-hub",
-  "version": "1.0.0",
-  "description": "Professional Cryptocurrency Trading Platform with Real-time Sync",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
-  },
-  "engines": {
-    "node": ">=18.x"
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
