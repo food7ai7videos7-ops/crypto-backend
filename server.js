@@ -1,6 +1,10 @@
 /**
- * Crypto Hub & Admin Panel Logic - 100% LocalStorage Version (Zero Errors & Cloud Sync Fixed)
+ * Crypto Hub & Admin Panel Logic - JSONBin Cloud Sync Version (Vercel 500 Error Fixed)
  */
+
+// Aap yahan apni free JSONBin.io ki details dal sakte hain taake cloud sync chale
+const JSONBIN_BIN_ID = "66f212fbe41b4d34e42d76b1"; // Example Public Bin ID
+const JSONBIN_API_KEY = "$2a$10$YourMasterKeyHere"; // Optional for public read/write or use free endpoint
 
 const allMarketPairs = [
     { symbol: 'BTCUSDT', price: 78648.01, change: -0.34 },
@@ -23,16 +27,20 @@ function getOrCreateUserId() {
     return userId;
 }
 
-// LocalStorage se data load ya initialize karna
+// Local fallback data structure
+function getDefaultData() {
+    return {
+        config: { trc20: '', details: '', fee: '0.1' },
+        deposits: [],
+        withdrawals: [],
+        balances: {}
+    };
+}
+
 function getLocalData() {
     let data = localStorage.getItem("crypto_hub_local_db");
     if (!data) {
-        const initialData = {
-            config: { trc20: '', details: '', fee: '0.1' },
-            deposits: [],
-            withdrawals: [],
-            balances: {}
-        };
+        const initialData = getDefaultData();
         localStorage.setItem("crypto_hub_local_db", JSON.stringify(initialData));
         return initialData;
     }
@@ -41,6 +49,50 @@ function getLocalData() {
 
 function saveLocalData(data) {
     localStorage.setItem("crypto_hub_local_db", JSON.stringify(data));
+    // Background mein cloud sync ki koshish
+    syncDataToCloud(data);
+}
+
+// Cloud Sync Functions (Vercel serverless crash se bachne ke liye direct client-side fetch)
+async function fetchCloudData() {
+    try {
+        // Localstorage se foran UI update karo taake speed fast rahay
+        const localData = getLocalData();
+        updateUIWithState(localData);
+        
+        // Agar cloud bin ID di hai toh wahan se latest data fetch karo
+        if (JSONBIN_BIN_ID && JSONBIN_BIN_ID !== "YOUR_BIN_ID_HERE") {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            if (response.ok) {
+                const resJson = await response.json();
+                if (resJson && resJson.record) {
+                    saveLocalData(resJson.record);
+                    updateUIWithState(resJson.record);
+                }
+            }
+        }
+    } catch (e) {
+        console.log("Using local state due to network/cloud timeout.");
+    }
+}
+
+async function syncDataToCloud(data) {
+    try {
+        if (JSONBIN_BIN_ID && JSONBIN_BIN_ID !== "YOUR_BIN_ID_HERE") {
+            await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
+                },
+                body: JSON.stringify(data)
+            });
+        }
+    } catch (e) {
+        console.log("Cloud sync update skipped.");
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -52,18 +104,13 @@ document.addEventListener("DOMContentLoaded", () => {
     setupMarketSearch();
     fetchCloudData();
 
-    setInterval(fetchCloudData, 2000);
+    setInterval(fetchCloudData, 3000);
 });
-
-function fetchCloudData() {
-    const data = getLocalData();
-    updateUIWithState(data);
-}
 
 function updateUIWithState(data) {
     const myId = getOrCreateUserId();
 
-    const userBal = data.balances[myId] || 0;
+    const userBal = data.balances && data.balances[myId] ? data.balances[myId] : 0;
     const balEl = document.getElementById("userBalance");
     if (balEl) balEl.innerText = `$${parseFloat(userBal).toFixed(2)}`;
 
@@ -106,7 +153,7 @@ function updateUIWithState(data) {
     const withContainer = document.getElementById("pendingWithdrawals");
 
     if (depContainer) {
-        depContainer.innerHTML = data.deposits.length > 0 
+        depContainer.innerHTML = data.deposits && data.deposits.length > 0 
             ? data.deposits.map((d, index) => `
                 <div class="flex justify-between items-center py-2 border-b border-gray-800 text-[11px]">
                     <div>
@@ -123,7 +170,7 @@ function updateUIWithState(data) {
     }
 
     if (withContainer) {
-        withContainer.innerHTML = data.withdrawals.length > 0 
+        withContainer.innerHTML = data.withdrawals && data.withdrawals.length > 0 
             ? data.withdrawals.map((w, index) => `
                 <div class="flex justify-between items-center py-2 border-b border-gray-800 text-[11px]">
                     <div>
@@ -171,6 +218,7 @@ function submitDepositRequest() {
     const timeStr = new Date().toLocaleTimeString();
 
     let data = getLocalData();
+    if (!data.deposits) data.deposits = [];
     data.deposits.push({ amount: amount, userId: myId, time: timeStr });
     saveLocalData(data);
 
@@ -188,6 +236,7 @@ function submitWithdrawRequest() {
     const timeStr = new Date().toLocaleTimeString();
 
     let data = getLocalData();
+    if (!data.withdrawals) data.withdrawals = [];
     data.withdrawals.push({ amount: amount, userId: myId, time: timeStr });
     saveLocalData(data);
 
@@ -292,7 +341,7 @@ function executeTrade(side) {
 
     const myId = getOrCreateUserId();
     let data = getLocalData();
-    const currentBalance = data.balances[myId] || 0;
+    const currentBalance = data.balances && data.balances[myId] ? data.balances[myId] : 0;
 
     if (currentBalance < tradeAmount) {
         alert(`Insufficient Balance ($${currentBalance.toFixed(2)}). Please deposit funds first to trade!`);
