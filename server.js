@@ -1,5 +1,5 @@
 /**
- * Crypto Hub & Admin Panel Logic - LocalStorage Version (Zero Errors & Debug Mode)
+ * Crypto Hub & Admin Panel Logic - 100% LocalStorage Version (Zero Errors & Cloud Sync Fixed)
  */
 
 const allMarketPairs = [
@@ -330,9 +330,8 @@ function verifyAdminPanelPassword() {
             pwdInput.value = '';
             panel.scrollIntoView({ behavior: 'smooth' });
             fetchCloudData();
-            alert("Success: Admin panel khul gaya!");
         } else {
-            alert("Incorrect Password! Aapne type kiya: " + pwd);
+            alert("Incorrect Password!");
         }
     } catch (err) {
         alert("JS Error: " + err.message);
